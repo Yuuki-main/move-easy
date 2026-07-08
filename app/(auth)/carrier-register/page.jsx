@@ -247,6 +247,7 @@ export default function CarrierRegisterPage() {
 
     setLoading(false)
     router.push('/dashboard/carrier')
+    router.refresh()
   }
 
   return (

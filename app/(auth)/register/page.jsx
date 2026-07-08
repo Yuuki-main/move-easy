@@ -68,6 +68,7 @@ export default function RegisterPage() {
 
     setLoading(false)
     router.push('/dashboard')
+    router.refresh()
   }
 
   return (

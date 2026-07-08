@@ -56,7 +56,7 @@ export default function QuoteForm({ jobId, existingQuote }) {
       const data = await res.json()
 
       if (data.insufficientBalance) {
-        router.push('/dashboard/carrier/wallet')
+        router.push('/dashboard/carrier/wallet?reason=insufficient-balance')
         return
       }
 

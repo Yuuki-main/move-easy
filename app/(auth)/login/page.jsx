@@ -31,7 +31,7 @@ export default function LoginPage() {
       return
     }
 
-    const { data: profile } = await supabase
+    await supabase
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
@@ -39,11 +39,8 @@ export default function LoginPage() {
 
     setLoading(false)
 
-    if (profile?.role === 'carrier') {
-      router.push('/dashboard/carrier')
-    } else {
-      router.push('/dashboard')
-    }
+    router.replace('/')
+    router.refresh()
   }
 
   return (
