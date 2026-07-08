@@ -3,15 +3,27 @@ import { useState } from 'react'
 const initial = {
   step: 1,
   jobType: null,
+  // Pickup
   pickupAddress: '',
   pickupLat: null,
   pickupLng: null,
+  pickupCity: '',
+  pickupState: '',
+  pickupCountry: '',
+  pickupPostcode: '',
+  // Delivery
   deliveryAddress: '',
   deliveryLat: null,
   deliveryLng: null,
+  deliveryCity: '',
+  deliveryState: '',
+  deliveryCountry: '',
+  deliveryPostcode: '',
+  // Date
   moveDateType: 'flexible',
   moveDateFrom: '',
   moveDateTo: '',
+  // Details
   pickupFloor: 'Ground floor',
   itemLoading: 'Requires 1 person to load',
   deliveryFloor: 'Ground floor',

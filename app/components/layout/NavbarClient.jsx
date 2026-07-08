@@ -37,13 +37,14 @@ const RESOURCES_ITEMS = [
 ]
 
 function getNavLinks(role) {
+  const isCarrier = role === 'carrier'
   return [
-    { label: 'Get Prices', href: '/get-prices' },
+    ...(!isCarrier ? [{ label: 'Get Prices', href: '/get-prices' }] : []),
     ...(role
       ? [
           {
-            label: 'My Deliveries (0)',
-            href: role === 'carrier' ? '/dashboard/carrier/jobs' : '/dashboard/jobs',
+            label: isCarrier ? 'Browse Jobs' : 'My Deliveries',
+            href: isCarrier ? '/dashboard/carrier/jobs' : '/dashboard/jobs',
           },
         ]
       : []),
@@ -52,6 +53,7 @@ function getNavLinks(role) {
 }
 
 export default function NavbarClient({ user, firstName, role, unreadCount }) {
+  const isCarrier = role === 'carrier'
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -217,16 +219,16 @@ export default function NavbarClient({ user, firstName, role, unreadCount }) {
                         </div>
 
                         <Link
-                          href="/dashboard/jobs"
+                          href={isCarrier ? '/dashboard/carrier/jobs' : '/dashboard/jobs'}
                           onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                         >
                           <Truck size={15} />
-                          My Jobs
+                          {isCarrier ? 'Browse Jobs' : 'My Jobs'}
                         </Link>
 
                         <Link
-                          href="/dashboard"
+                          href={isCarrier ? '/dashboard/carrier' : '/dashboard'}
                           onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                         >

@@ -1,20 +1,15 @@
 'use client'
 
-import AddressAutocomplete from '@/components/AddressAutocomplete'
+import { useMemo, useCallback } from 'react'
+import { AddressAutocomplete } from '@/components/address'
+import { LeafletMap } from '@/components/maps'
+import type { AddressSuggestion } from '@/types/address'
+import type { Location } from '@/types/maps'
 
 const FLOOR_OPTIONS = [
-  'Basement',
-  'Ground floor',
-  '1st floor',
-  '2nd floor',
-  '3rd floor',
-  '4th floor',
-  '5th floor',
-  '6th floor',
-  '7th floor',
-  '8th floor',
-  '9th floor',
-  'Above 9th floor',
+  'Basement', 'Ground floor', '1st floor', '2nd floor', '3rd floor',
+  '4th floor', '5th floor', '6th floor', '7th floor', '8th floor',
+  '9th floor', 'Above 9th floor',
 ]
 
 const LOADING_OPTIONS = [
@@ -36,58 +31,110 @@ const DATE_TYPES = [
   { value: 'between', label: 'Between dates' },
 ]
 
-const DATE_TYPE_CLASS =
-  'flex-1 rounded-lg border px-3 py-2 text-xs font-medium text-center transition-colors cursor-pointer'
-
 export default function Step2Addresses({ wizard }) {
   const { state, update, nextStep, prevStep } = wizard
 
-  const canContinue =
-    Boolean(state.pickupAddress?.trim()) &&
-    Boolean(state.deliveryAddress?.trim())
+  // ── Derived: Location objects for the map ──────────────────────────
+  const pickupLocation: Location | null = useMemo(() => {
+    if (state.pickupLat == null || state.pickupLng == null) return null
+    return {
+      address: state.pickupAddress,
+      latitude: state.pickupLat,
+      longitude: state.pickupLng,
+      city: state.pickupCity || undefined,
+      state: state.pickupState || undefined,
+      country: state.pickupCountry || undefined,
+      postcode: state.pickupPostcode || undefined,
+    }
+  }, [state.pickupAddress, state.pickupLat, state.pickupLng, state.pickupCity, state.pickupState, state.pickupCountry, state.pickupPostcode])
 
+  const deliveryLocation: Location | null = useMemo(() => {
+    if (state.deliveryLat == null || state.deliveryLng == null) return null
+    return {
+      address: state.deliveryAddress,
+      latitude: state.deliveryLat,
+      longitude: state.deliveryLng,
+      city: state.deliveryCity || undefined,
+      state: state.deliveryState || undefined,
+      country: state.deliveryCountry || undefined,
+      postcode: state.deliveryPostcode || undefined,
+    }
+  }, [state.deliveryAddress, state.deliveryLat, state.deliveryLng, state.deliveryCity, state.deliveryState, state.deliveryCountry, state.deliveryPostcode])
+
+  // ── Validation: must have selected valid coordinates ────────────────
+  const canContinue =
+    state.pickupLat != null && state.pickupLng != null &&
+    state.deliveryLat != null && state.deliveryLng != null
+
+  // ── Handlers ───────────────────────────────────────────────────────
+  const handlePickupSelect = useCallback((s: AddressSuggestion) => {
+    update({
+      pickupAddress: s.address,
+      pickupLat: s.latitude,
+      pickupLng: s.longitude,
+      pickupCity: s.city || '',
+      pickupState: s.state || '',
+      pickupCountry: s.country || '',
+      pickupPostcode: s.postcode || '',
+    })
+  }, [update])
+
+  const handlePickupChange = useCallback((val: string) => {
+    update({ pickupAddress: val })
+  }, [update])
+
+  const handleDeliverySelect = useCallback((s: AddressSuggestion) => {
+    update({
+      deliveryAddress: s.address,
+      deliveryLat: s.latitude,
+      deliveryLng: s.longitude,
+      deliveryCity: s.city || '',
+      deliveryState: s.state || '',
+      deliveryCountry: s.country || '',
+      deliveryPostcode: s.postcode || '',
+    })
+  }, [update])
+
+  const handleDeliveryChange = useCallback((val: string) => {
+    update({ deliveryAddress: val })
+  }, [update])
+
+  // ── Render ─────────────────────────────────────────────────────────
   return (
     <div>
+      {/* Back button */}
       <button
+        type="button"
         onClick={prevStep}
         className="mb-6 flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-gray-700 transition-colors"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" clipRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
         </svg>
         Back
       </button>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">
-        Where is the move?
-      </h2>
-
-      <p className="text-sm text-gray-500 mb-8">
-        Enter pickup and delivery locations.
-      </p>
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Where is the move?</h2>
+      <p className="text-sm text-gray-500 mb-8">Enter pickup and delivery locations.</p>
 
       <div className="space-y-5">
-        {/* Pickup Address */}
+        {/* ── Map preview ────────────────────────────────────────── */}
+        <LeafletMap
+          pickup={pickupLocation}
+          delivery={deliveryLocation}
+          height="220px"
+          interactive={false}
+          showZoomControl={false}
+        />
+
+        {/* ── Pickup Address ─────────────────────────────────────── */}
         <AddressAutocomplete
           label="Pickup address"
           value={state.pickupAddress}
-          onChange={(address, lat, lng) =>
-            update({
-              pickupAddress: address,
-              pickupLat: lat,
-              pickupLng: lng,
-            })
-          }
+          onChange={handlePickupChange}
+          onSelect={handlePickupSelect}
           placeholder="Where should the mover collect from?"
+          required
         />
 
         {/* Floor + Loading side-by-side */}
@@ -102,9 +149,7 @@ export default function Step2Addresses({ wizard }) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {FLOOR_OPTIONS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
+                <option key={f} value={f}>{f}</option>
               ))}
             </select>
           </div>
@@ -118,26 +163,20 @@ export default function Step2Addresses({ wizard }) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {LOADING_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Delivery Address */}
+        {/* ── Delivery Address ───────────────────────────────────── */}
         <AddressAutocomplete
           label="Delivery address"
           value={state.deliveryAddress}
-          onChange={(address, lat, lng) =>
-            update({
-              deliveryAddress: address,
-              deliveryLat: lat,
-              deliveryLng: lng,
-            })
-          }
+          onChange={handleDeliveryChange}
+          onSelect={handleDeliverySelect}
           placeholder="Where should the mover deliver to?"
+          required
         />
 
         {/* Floor + Unloading side-by-side */}
@@ -152,9 +191,7 @@ export default function Step2Addresses({ wizard }) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {FLOOR_OPTIONS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
+                <option key={f} value={f}>{f}</option>
               ))}
             </select>
           </div>
@@ -168,9 +205,7 @@ export default function Step2Addresses({ wizard }) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {UNLOADING_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
           </div>
@@ -188,10 +223,10 @@ export default function Step2Addresses({ wizard }) {
                 type="button"
                 onClick={() => update({ moveDateType: dt.value })}
                 className={
-                  DATE_TYPE_CLASS +
+                  `flex-1 rounded-lg border px-3 py-2 text-xs font-medium text-center transition-colors cursor-pointer ` +
                   (state.moveDateType === dt.value
-                    ? ' border-blue-500 bg-blue-50 text-blue-700'
-                    : ' border-gray-200 text-gray-500 hover:border-gray-300')
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300')
                 }
               >
                 {dt.label}
@@ -199,12 +234,9 @@ export default function Step2Addresses({ wizard }) {
             ))}
           </div>
 
-          {/* Conditional date pickers */}
           {state.moveDateType === 'specific' && (
             <div className="mt-3">
-              <label className="mb-1 block text-xs font-medium text-gray-500">
-                Move date
-              </label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">Move date</label>
               <input
                 type="date"
                 value={state.moveDateFrom}
@@ -218,9 +250,7 @@ export default function Step2Addresses({ wizard }) {
           {state.moveDateType === 'between' && (
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">
-                  From
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">From</label>
                 <input
                   type="date"
                   value={state.moveDateFrom}
@@ -230,9 +260,7 @@ export default function Step2Addresses({ wizard }) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">
-                  To
-                </label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">To</label>
                 <input
                   type="date"
                   value={state.moveDateTo}
@@ -246,6 +274,7 @@ export default function Step2Addresses({ wizard }) {
         </div>
       </div>
 
+      {/* ── Continue button ────────────────────────────────────────── */}
       <button
         type="button"
         onClick={nextStep}

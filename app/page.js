@@ -9,15 +9,13 @@ import HowItWorks from '@/components/main/HowItWorks'
 import FAQSection from '@/components/FAQSection'
 import CTASectionAnimated from '@/components/main/CTASectionAnimated'
 
-export const revalidate = 60
-
 function Skeleton({ className = '' }) {
   return (
     <div className={`animate-pulse bg-[#e8e8e8] rounded-2xl ${className}`} />
   )
 }
 
-async function HeroWithRating() {
+async function HeroWithRating({ isCarrier }) {
   const supabase = await createClient()
 
   const { count, data } = await supabase
@@ -32,19 +30,40 @@ async function HeroWithRating() {
     avgRating = data.reduce((s, r) => s + r.rating, 0) / data.length
   }
 
-  return <MovingHero reviewCount={reviewCount} avgRating={avgRating} />
+  return (
+    <MovingHero
+      reviewCount={reviewCount}
+      avgRating={avgRating}
+      isCarrier={isCarrier}
+    />
+  )
 }
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let isCarrier = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    isCarrier = profile?.role === 'carrier'
+  }
+
   return (
     <>
       <Suspense
         fallback={<Skeleton className="min-h-[85vh] w-full rounded-none" />}
       >
-        <HeroWithRating />
+        <HeroWithRating isCarrier={isCarrier} />
       </Suspense>
 
-      <PopularServices />
+      {!isCarrier && <PopularServices />}
 
       <Suspense
         fallback={

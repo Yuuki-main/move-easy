@@ -6,6 +6,7 @@ import MessageThread from '@/components/MessageThread'
 import ReviewForm from '@/components/ReviewForm'
 import QuotesSection from './QuotesSection'
 import CancelJobButton from './CancelJobButton'
+import ShipmentMap from '@/components/shipment/ShipmentMap'
 
 export default async function CustomerJobDetailPage({ params }) {
   const supabase = await createClient()
@@ -22,6 +23,8 @@ export default async function CustomerJobDetailPage({ params }) {
     .eq('id', id)
     .eq('customer_id', user.id)
     .single()
+
+  console.log('job', { job })
 
   if (!job)
     return <p className="text-center py-20 text-gray-400">Job not found.</p>
@@ -88,15 +91,6 @@ export default async function CustomerJobDetailPage({ params }) {
 
   const requestId = job.id.slice(0, 6).toUpperCase()
 
-  const mapUrl =
-    job.pickup_lat && job.delivery_lat
-      ? `https://maps.googleapis.com/maps/api/staticmap?` +
-        `size=600x400&maptype=roadmap&` +
-        `markers=color:red%7Clabel:A%7C${job.pickup_lat},${job.pickup_lng}&` +
-        `markers=color:green%7Clabel:B%7C${job.delivery_lat},${job.delivery_lng}&` +
-        `key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`
-      : null
-
   const collectionDateDisplay =
     job.move_date_type === 'flexible'
       ? 'Flexible'
@@ -128,7 +122,8 @@ export default async function CustomerJobDetailPage({ params }) {
       {/* Job title */}
       <h1 className="text-2xl font-bold text-gray-900 mb-1">{jobTypeLabel}</h1>
       <p className="text-sm text-gray-400 mb-6">
-        {job.pickup_address?.split(',')[0]} → {job.delivery_address?.split(',')[0]}
+        {job.pickup_address?.split(',')[0]} →{' '}
+        {job.delivery_address?.split(',')[0]}
       </p>
 
       {/* Job summary */}
@@ -139,7 +134,9 @@ export default async function CustomerJobDetailPage({ params }) {
         <p className="text-sm font-medium">
           {job.pickup_address} → {job.delivery_address}
         </p>
-        <p className="text-xs text-gray-400 mt-1 capitalize">Status: {job.status}</p>
+        <p className="text-xs text-gray-400 mt-1 capitalize">
+          Status: {job.status}
+        </p>
       </div>
 
       {/* Revealed carrier contact — only when booked */}
@@ -180,25 +177,24 @@ export default async function CustomerJobDetailPage({ params }) {
         <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1 capitalize">
           {job.type?.replace(/_/g, ' ')}
         </p>
-        <h2 className="text-3xl font-black text-gray-900">My delivery details</h2>
+        <h2 className="text-3xl font-black text-gray-900">
+          My delivery details
+        </h2>
       </div>
 
       {/* Map + Collection / Delivery grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         {/* Map */}
-        {mapUrl ? (
-          <div className="rounded-xl overflow-hidden border border-gray-200 h-80">
-            <img
-              src={mapUrl}
-              alt="Route map"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className="rounded-xl border border-gray-200 h-80 bg-gray-50 flex items-center justify-center">
-            <p className="text-sm text-gray-400">Map not available</p>
-          </div>
-        )}
+        <ShipmentMap
+          pickupAddress={job.pickup_address}
+          pickupLat={job.pickup_lat}
+          pickupLng={job.pickup_lng}
+          deliveryAddress={job.delivery_address}
+          deliveryLat={job.delivery_lat}
+          deliveryLng={job.delivery_lng}
+          interactive={false}
+          height="320px"
+        />
 
         {/* Collection + Delivery details */}
         <div className="space-y-8">
@@ -212,22 +208,30 @@ export default async function CustomerJobDetailPage({ params }) {
                   <p className="text-sm font-semibold text-gray-900">Address</p>
                   <p className="text-sm text-gray-600">{job.pickup_address}</p>
                   {job.pickup_floor && (
-                    <p className="text-xs text-blue-600 mt-0.5">• {job.pickup_floor}</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      • {job.pickup_floor}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar size={18} className="text-gray-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Collection date</p>
-                  <p className="text-sm text-gray-600 capitalize">{collectionDateDisplay}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Collection date
+                  </p>
+                  <p className="text-sm text-gray-600 capitalize">
+                    {collectionDateDisplay}
+                  </p>
                 </div>
               </div>
               {job.item_loading && (
                 <div className="flex items-start gap-3">
                   <Users size={18} className="text-gray-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Loading</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Loading
+                    </p>
                     <p className="text-sm text-gray-600">{job.item_loading}</p>
                   </div>
                 </div>
@@ -245,25 +249,37 @@ export default async function CustomerJobDetailPage({ params }) {
                 <MapPin size={18} className="text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Address</p>
-                  <p className="text-sm text-gray-600">{job.delivery_address}</p>
+                  <p className="text-sm text-gray-600">
+                    {job.delivery_address}
+                  </p>
                   {job.delivery_floor && (
-                    <p className="text-xs text-blue-600 mt-0.5">• {job.delivery_floor}</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      • {job.delivery_floor}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar size={18} className="text-gray-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Delivery date</p>
-                  <p className="text-sm text-gray-600 capitalize">{deliveryDateDisplay}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Delivery date
+                  </p>
+                  <p className="text-sm text-gray-600 capitalize">
+                    {deliveryDateDisplay}
+                  </p>
                 </div>
               </div>
               {job.item_unloading && (
                 <div className="flex items-start gap-3">
                   <Users size={18} className="text-gray-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Unloading</p>
-                    <p className="text-sm text-gray-600">{job.item_unloading}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Unloading
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {job.item_unloading}
+                    </p>
                   </div>
                 </div>
               )}
@@ -277,15 +293,23 @@ export default async function CustomerJobDetailPage({ params }) {
         <div className="mb-6">
           {job.job_items.map((item) => (
             <div key={item.id} className="border-t border-gray-100 py-5">
-              <h3 className="font-bold text-gray-900 capitalize mb-1">{item.name}</h3>
+              <h3 className="font-bold text-gray-900 capitalize mb-1">
+                {item.name}
+              </h3>
               {job.description && (
                 <p className="text-sm text-gray-500 mb-3">{job.description}</p>
               )}
               <div className="bg-gray-50 rounded-lg px-4 py-3 flex flex-wrap gap-6 text-sm text-gray-500">
-                <span>Weight {item.weight_kg ? `${item.weight_kg}kg` : '—'}</span>
-                <span>Length {item.length_cm ? `${item.length_cm}cm` : '—'}</span>
+                <span>
+                  Weight {item.weight_kg ? `${item.weight_kg}kg` : '—'}
+                </span>
+                <span>
+                  Length {item.length_cm ? `${item.length_cm}cm` : '—'}
+                </span>
                 <span>Width {item.width_cm ? `${item.width_cm}cm` : '—'}</span>
-                <span>Height {item.height_cm ? `${item.height_cm}cm` : '—'}</span>
+                <span>
+                  Height {item.height_cm ? `${item.height_cm}cm` : '—'}
+                </span>
               </div>
             </div>
           ))}
@@ -325,7 +349,9 @@ export default async function CustomerJobDetailPage({ params }) {
 
       {/* Request ID + actions */}
       <div className="border-t border-gray-100 py-8 mb-10">
-        <h3 className="font-bold text-gray-900 mb-1">Request ID #{requestId}</h3>
+        <h3 className="font-bold text-gray-900 mb-1">
+          Request ID #{requestId}
+        </h3>
         <p className="text-xs text-gray-400 mb-5">
           Posted on{' '}
           {new Date(job.created_at).toLocaleDateString('en-IN', {

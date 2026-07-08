@@ -54,15 +54,23 @@ export default function Step4Review({ wizard }) {
         return
       }
 
+      // Convert File objects to base64 using browser-native APIs only.
+      // Buffer.from() is a Node.js API — NOT available in the browser.
       const photos = await Promise.all(
-        state.photos.map(async (file) => {
-          const buffer = await file.arrayBuffer()
-
-          return {
-            base64: Buffer.from(buffer).toString('base64'),
-            type: file.type,
-          }
-        }),
+        state.photos.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => {
+                const dataUrl = reader.result
+                // dataUrl is "data:image/jpeg;base64,XXXX..."
+                const base64 = dataUrl.split(',')[1]
+                resolve({ base64, type: file.type })
+              }
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(file)
+            }),
+        ),
       )
 
       const payload = {
@@ -73,11 +81,19 @@ export default function Step4Review({ wizard }) {
         pickupAddress: state.pickupAddress,
         pickupLat: state.pickupLat,
         pickupLng: state.pickupLng,
+        pickupCity: state.pickupCity,
+        pickupState: state.pickupState,
+        pickupCountry: state.pickupCountry,
+        pickupPostcode: state.pickupPostcode,
 
         // Delivery
         deliveryAddress: state.deliveryAddress,
         deliveryLat: state.deliveryLat,
         deliveryLng: state.deliveryLng,
+        deliveryCity: state.deliveryCity,
+        deliveryState: state.deliveryState,
+        deliveryCountry: state.deliveryCountry,
+        deliveryPostcode: state.deliveryPostcode,
 
         // Date
         moveDateType: state.moveDateType,
