@@ -135,9 +135,16 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">
-            &copy; {new Date().getFullYear()} MovingEasy. All rights reserved.
-          </p>
+          <a
+            href="https://crestwave.com.au/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-300 transition-colors text-sm text-slate-500"
+          >
+            &copy; 2026 Crestwave Digital PTY LTD. All development rights
+            reserved.
+          </a>
+
           <div className="flex items-center gap-6">
             <Link
               href="/privacy"
