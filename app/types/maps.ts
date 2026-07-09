@@ -107,7 +107,7 @@ export interface LeafletMapProps {
   /**
    * Center of the map.
    *
-   * @default { lat: 20.5937, lng: 78.9629 } — geographic centre of India
+   * @default { lat: -40.9006, lng: 174.8860 } — geographic centre of New Zealand
    */
   center?: LatLng
 
@@ -200,10 +200,10 @@ export interface LeafletMapProps {
 // Defaults
 // ---------------------------------------------------------------------------
 
-/** Default map center — approximate geographic centre of India. */
+/** Default map center — approximate geographic centre of New Zealand. */
 export const DEFAULT_CENTER: LatLng = {
-  lat: 20.5937,
-  lng: 78.9629,
+  lat: -40.9006,
+  lng: 174.8860,
 }
 
 /** Default zoom level. */

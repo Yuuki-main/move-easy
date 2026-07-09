@@ -13,7 +13,7 @@ const STEPS = [
     image:
       'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&h=450&fit=crop&crop=center',
     title: 'Get quotes from carriers',
-    desc: 'Verified carriers across India review your request and send competitive quotes. Compare prices, ratings, and reviews.',
+    desc: 'Verified carriers across New Zealand review your request and send competitive quotes. Compare prices, ratings, and reviews.',
   },
   {
     num: '03',

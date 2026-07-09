@@ -83,7 +83,7 @@ export default function PopularServices() {
           Compare quotes for any moving service
         </h2>
         <p className="text-gray-400 text-sm mb-8">
-          Get competitive prices from trusted carriers across India.
+          Get competitive prices from trusted carriers across New Zealand.
         </p>
         <PopularServicesAnimated services={SERVICES} />
       </div>

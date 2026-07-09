@@ -118,8 +118,8 @@ export async function POST(req) {
 
       // Add these ONLY if these columns exist
       move_date_type: moveDateType,
-      move_date_from: moveDateFrom,
-      move_date_to: moveDateTo,
+      move_date_from: moveDateFrom || null,
+      move_date_to: moveDateTo || null,
 
       pickup_floor: pickupFloor,
       delivery_floor: deliveryFloor,

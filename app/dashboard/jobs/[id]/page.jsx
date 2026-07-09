@@ -91,31 +91,37 @@ export default async function CustomerJobDetailPage({ params }) {
 
   const requestId = job.id.slice(0, 6).toUpperCase()
 
-  const collectionDateDisplay =
-    job.move_date_type === 'flexible'
-      ? 'Flexible'
-      : job.move_date_type === 'asap'
-        ? 'ASAP'
-        : job.move_date_from
+  const collectionDateDisplay = (() => {
+    switch (job.move_date_type) {
+      case 'flexible': return 'Flexible'
+      case 'asap': return 'ASAP'
+      case 'specific':
+        return job.move_date_from
           ? new Date(job.move_date_from).toLocaleDateString('en-IN', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
             })
-          : 'Flexible'
-
-  const deliveryDateDisplay =
-    job.move_date_type === 'flexible'
-      ? 'Flexible'
-      : job.move_date_type === 'asap'
-        ? 'ASAP'
-        : job.move_date_to
-          ? new Date(job.move_date_to).toLocaleDateString('en-IN', {
+          : 'Not set'
+      case 'between':
+        return job.move_date_from
+          ? new Date(job.move_date_from).toLocaleDateString('en-IN', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
             })
-          : 'Flexible'
+          : 'Not set'
+      default: return 'Flexible'
+    }
+  })()
+
+  const deliveryDateDisplay = job.move_date_to
+    ? new Date(job.move_date_to).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
 
   return (
     <div className="max-w-3xl mx-auto px-4 pb-10 pt-8">
@@ -218,7 +224,7 @@ export default async function CustomerJobDetailPage({ params }) {
                 <Calendar size={18} className="text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
-                    Collection date
+                    {job.move_date_type === 'between' ? 'Collection date' : 'Move date'}
                   </p>
                   <p className="text-sm text-gray-600 capitalize">
                     {collectionDateDisplay}
@@ -259,17 +265,19 @@ export default async function CustomerJobDetailPage({ params }) {
                   )}
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Calendar size={18} className="text-gray-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    Delivery date
-                  </p>
-                  <p className="text-sm text-gray-600 capitalize">
-                    {deliveryDateDisplay}
-                  </p>
+              {deliveryDateDisplay && (
+                <div className="flex items-start gap-3">
+                  <Calendar size={18} className="text-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Delivery date
+                    </p>
+                    <p className="text-sm text-gray-600 capitalize">
+                      {deliveryDateDisplay}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               {job.item_unloading && (
                 <div className="flex items-start gap-3">
                   <Users size={18} className="text-gray-400 mt-0.5 shrink-0" />

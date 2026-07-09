@@ -209,7 +209,7 @@ export default function QuotesSection({ quotes, job, userId }) {
                     </p>
                     <p className="text-sm text-gray-500 leading-relaxed">
                       {carrier.profile_description ??
-                        `${carrier.public_name ?? 'This carrier'} provides professional moving services across India with a customer-focused approach and competitive pricing.`}
+                        `${carrier.public_name ?? 'This carrier'} provides professional moving services across New Zealand with a customer-focused approach and competitive pricing.`}
                     </p>
                   </div>
 

@@ -38,8 +38,8 @@ const FEATURES = [
   },
   {
     emoji: '🗺️',
-    title: 'Anywhere in India',
-    desc: 'Pan-India coverage — from metro cities to small towns.',
+    title: 'Anywhere in New Zealand',
+    desc: 'Pan-New Zealand coverage — from metro cities to small towns.',
   },
   {
     emoji: '💯',

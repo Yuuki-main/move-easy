@@ -17,8 +17,8 @@ const FAQS = [
     a: 'Yes. All carriers go through a verification and approval process before they can quote on jobs. We check company details, GST registration, and service history.',
   },
   {
-    q: 'Which cities do you cover in India?',
-    a: 'We cover all major metros — Mumbai, Delhi, Bangalore, Chennai, Hyderabad, Kolkata, Pune, Ahmedabad — plus hundreds of smaller cities and towns across India.',
+    q: 'Which cities do you cover in New Zealand?',
+    a: 'We cover all major cities — Auckland, Wellington, Christchurch, Hamilton, Tauranga, Dunedin, Palmerston North, Napier-Hastings — plus regional towns across New Zealand.',
   },
   {
     q: 'Can I transport my car or bike?',

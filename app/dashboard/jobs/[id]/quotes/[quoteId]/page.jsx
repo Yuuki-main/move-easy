@@ -251,7 +251,7 @@ export default async function QuoteDetailPage({ params }) {
                     {Number(jobsCompleted).toLocaleString('en-IN')} jobs
                     completed
                   </span>{' '}
-                  across India
+                  across New Zealand
                 </p>
               </div>
             )}
@@ -307,7 +307,7 @@ export default async function QuoteDetailPage({ params }) {
             </h3>
             <p className="text-sm text-gray-500 leading-relaxed">
               {carrier?.profile_description ??
-                `${carrier?.public_name ?? 'This carrier'} provides professional moving services across India with a customer-focused approach and competitive pricing.`}
+                `${carrier?.public_name ?? 'This carrier'} provides professional moving services across New Zealand with a customer-focused approach and competitive pricing.`}
             </p>
           </div>
 

@@ -74,7 +74,7 @@ export default function MovingHero({ reviewCount, avgRating, isCarrier }) {
                 Ready to take on your next job?
               </h1>
               <p className="text-gray-500 text-sm mt-2 mb-6">
-                Browse open delivery requests from customers across India and
+                Browse open delivery requests from customers across New Zealand and
                 submit your quotes.
               </p>
               <Link
@@ -93,7 +93,7 @@ export default function MovingHero({ reviewCount, avgRating, isCarrier }) {
           ) : (
             <>
               <h1 className="text-4xl font-black tracking-tight text-gray-900 leading-tight">
-                India&apos;s best moving teams — ready for your move
+                New Zealand&apos;s best moving teams — ready for your move
               </h1>
 
               <p className="text-gray-500 text-sm mt-2 mb-6">

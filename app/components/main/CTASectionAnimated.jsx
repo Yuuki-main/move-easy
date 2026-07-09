@@ -17,7 +17,7 @@ export default function CTASectionAnimated() {
           Ready to move?
         </h2>
         <p className="text-gray-400 text-sm mb-8">
-          Get free quotes from verified carriers across India. No obligation, no
+          Get free quotes from verified carriers across New Zealand. No obligation, no
           hidden fees.
         </p>
         <Link

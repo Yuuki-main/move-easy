@@ -72,7 +72,7 @@ function MapSkeleton() {
  * Renders an interactive OpenStreetMap via Leaflet.
  *
  * All props are optional — sensible defaults are applied:
- * - Default centre: geographic centre of India (20.59°N, 78.96°E)
+ * - Default centre: geographic centre of New Zealand (-40.90°S, 174.89°E)
  * - Default zoom: 5
  * - Default height: 100% (fills parent)
  *

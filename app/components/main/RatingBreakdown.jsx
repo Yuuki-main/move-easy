@@ -25,10 +25,10 @@ export default async function RatingBreakdown() {
     <section className="py-20 px-4 bg-white">
       <div className="max-w-[1600px] mx-auto">
         <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2 text-center">
-          India&apos;s most trusted moving marketplace
+          New Zealand&apos;s most trusted moving marketplace
         </h2>
         <p className="text-gray-400 text-sm mb-10 text-center">
-          Rated by thousands of customers across India.
+          Rated by thousands of customers across New Zealand.
         </p>
         <RatingBreakdownAnimated avg={avg} total={total} bins={bins} />
       </div>

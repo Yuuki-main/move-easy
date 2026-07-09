@@ -42,7 +42,7 @@ export default async function RecentReviews() {
           What our customers say
         </h2>
         <p className="text-gray-400 text-sm mb-8">
-          Real reviews from real moves across India.
+          Real reviews from real moves across New Zealand.
         </p>
 
         <RecentReviewsAnimated reviews={prepared} />
