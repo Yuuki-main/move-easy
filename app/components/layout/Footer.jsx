@@ -41,7 +41,7 @@ function FooterLink({ href, children }) {
     <li>
       <Link
         href={href}
-        className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1 group"
+        className="text-sm text-black hover:text-white transition-colors flex items-center gap-1 group"
       >
         <ChevronRight className="h-3.5 w-3.5 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
         {children}
@@ -52,7 +52,7 @@ function FooterLink({ href, children }) {
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-700 text-white">
+    <footer className="bg-white text-black">
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -67,7 +67,7 @@ export default function Footer() {
                 className="h-26 w-auto object-contain"
               />
             </Link>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+            <p className="text-black text-sm leading-relaxed mb-6">
               Your trusted platform for finding reliable movers. Compare quotes,
               read reviews, and book with confidence. Moving made simple.
             </p>
@@ -90,7 +90,7 @@ export default function Footer() {
 
           {/* Resources */}
           <div className="flex flex-col items-start">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-5">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
               Resources
             </h4>
             <ul className="space-y-3">
@@ -118,7 +118,7 @@ export default function Footer() {
 
           {/* Legal */}
           <div className="flex flex-col items-start">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-5">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
               Legal
             </h4>
             <ul className="space-y-3">
@@ -139,7 +139,7 @@ export default function Footer() {
             href="https://crestwave.com.au/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-slate-300 transition-colors text-sm text-slate-500"
+            className="hover:text-slate-300 transition-colors text-sm text-black"
           >
             &copy; 2026 Crestwave Digital PTY LTD. All development rights
             reserved.
@@ -148,13 +148,13 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <Link
               href="/privacy"
-              className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-sm text-black hover:text-slate-300 transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms"
-              className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-sm text-black hover:text-slate-300 transition-colors"
             >
               Terms of Service
             </Link>
