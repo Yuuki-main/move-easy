@@ -60,11 +60,11 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <Image
-                src="/main/move_eazy_logo.png"
+                src="/main/logo_white.png"
                 alt="Moving Easy"
-                width={140}
-                height={32}
-                className="h-16 w-auto object-contain"
+                width={200}
+                height={40}
+                className="h-22 w-auto object-contain"
               />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
@@ -103,7 +103,7 @@ export default function Footer() {
           </div>
 
           {/* Get Prices */}
-          <div className="flex flex-col items-start">
+          {/* <div className="flex flex-col items-start">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-5">
               Get Prices
             </h4>
@@ -114,7 +114,7 @@ export default function Footer() {
                 </FooterLink>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Legal */}
           <div className="flex flex-col items-start">
