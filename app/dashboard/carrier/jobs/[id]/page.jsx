@@ -4,7 +4,7 @@ import MessageThread from '@/components/MessageThread'
 
 const mask = (value) => (value ? '••••••••' : '••••••••')
 const maskPhone = (phone) =>
-  phone ? phone.slice(0, 2) + '••••••' + phone.slice(-2) : '+91 ••••••••••'
+  phone ? phone.slice(0, 2) + '••••••' + phone.slice(-2) : '+64 ••••••••••'
 
 export default async function CarrierJobDetailPage({ params }) {
   const supabase = await createClient()

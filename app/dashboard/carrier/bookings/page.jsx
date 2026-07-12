@@ -113,19 +113,19 @@ export default async function CarrierBookingsPage() {
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Quote price</p>
                     <p className="text-sm font-bold text-gray-900">
-                      ₹{price.toLocaleString('en-IN')}
+                      ${price.toLocaleString('en-NZ')}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Platform fee (18%)</p>
                     <p className="text-sm font-bold text-red-500">
-                      −₹{platformFee.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      −${platformFee.toLocaleString('en-NZ', { maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Your earnings</p>
                     <p className="text-sm font-bold text-green-600">
-                      ₹{earnings.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      ${earnings.toLocaleString('en-NZ', { maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>

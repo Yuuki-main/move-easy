@@ -45,7 +45,7 @@ export async function POST(req) {
   if ((carrier.wallet_balance || 0) < platformFee) {
     return NextResponse.json(
       {
-        error: `Insufficient balance. You need ₹${platformFee.toFixed(
+        error: `Insufficient balance. You need $${platformFee.toFixed(
           2,
         )} to bid on this job. Please top up your wallet.`,
         insufficientBalance: true,
@@ -108,7 +108,7 @@ export async function POST(req) {
     subject: 'You have a new quote on your move request',
     html: `
       <h2>New quote received!</h2>
-      <p>A carrier has submitted a quote of <strong>₹${price}</strong> for your move.</p>
+      <p>A carrier has submitted a quote of <strong>$${price}</strong> for your move.</p>
       ${message ? `<p>Message: "${message}"</p>` : ''}
       <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/jobs/${jobId}"
          style="background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">

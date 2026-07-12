@@ -125,7 +125,7 @@ export default async function CarrierQuotesPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-lg font-bold text-blue-600">
-                    ₹{quote.price}
+                    ${quote.price}
                   </p>
                   {quote.status === 'accepted' && (
                     <p className="text-xs text-green-600 font-medium mt-1">

@@ -21,21 +21,59 @@ const CATEGORY_OPTIONS = [
 ]
 
 const CITY_OPTIONS = [
-  'Mumbai', 'Delhi', 'Bengaluru', 'Hyderabad', 'Ahmedabad',
-  'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow',
-  'Surat', 'Kanpur', 'Nagpur', 'Indore', 'Thane',
-  'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara',
-  'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad',
-  'Meerut', 'Rajkot', 'Varanasi', 'Srinagar', 'Aurangabad',
-  'Dhanbad', 'Amritsar', 'Allahabad', 'Ranchi', 'Howrah',
-  'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur',
-  'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh',
+  'Auckland',
+  'Wellington',
+  'Christchurch',
+  'Hamilton',
+  'Tauranga',
+  'Dunedin',
+  'Palmerston North',
+  'Napier',
+  'Porirua',
+  'New Plymouth',
+  'Rotorua',
+  'Whangārei',
+  'Invercargill',
+  'Whanganui',
+  'Gisborne',
+  'Lower Hutt',
+  'Upper Hutt',
+  'Nelson',
+  'Blenheim',
+  'Timaru',
+  'Taupō',
+  'Queenstown',
+  'Wanaka',
+  'Ashburton',
+  'Rolleston',
+  'Cambridge',
+  'Pukekohe',
+  'Papakura',
+  'Paraparaumu',
+  'Levin',
+  'Masterton',
+  'Feilding',
+  'Tokoroa',
+  'Oamaru',
+  'Greymouth',
+  'Hastings',
+  'Richmond',
+  'Kerikeri',
+  'Te Awamutu',
+  'Morrinsville',
+  'Matamata',
+  'Thames',
+  'Kaitaia',
+  'Whakatāne',
+  'Cromwell',
 ]
 
 function PillToggle({ options, selected, onChange, labelKey, valueKey }) {
   const toggle = (val) => {
     onChange(
-      selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val],
+      selected.includes(val)
+        ? selected.filter((v) => v !== val)
+        : [...selected, val],
     )
   }
 
@@ -67,10 +105,18 @@ function PillToggle({ options, selected, onChange, labelKey, valueKey }) {
 export default function CarrierProfileForm({ carrier }) {
   const router = useRouter()
   const [publicName, setPublicName] = useState(carrier?.public_name ?? '')
-  const [description, setDescription] = useState(carrier?.profile_description ?? '')
-  const [paymentMethods, setPaymentMethods] = useState(carrier?.payment_methods ?? [])
-  const [serviceCategories, setServiceCategories] = useState(carrier?.service_categories ?? [])
-  const [serviceCities, setServiceCities] = useState(carrier?.service_cities ?? [])
+  const [description, setDescription] = useState(
+    carrier?.profile_description ?? '',
+  )
+  const [paymentMethods, setPaymentMethods] = useState(
+    carrier?.payment_methods ?? [],
+  )
+  const [serviceCategories, setServiceCategories] = useState(
+    carrier?.service_categories ?? [],
+  )
+  const [serviceCities, setServiceCities] = useState(
+    carrier?.service_cities ?? [],
+  )
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -196,13 +242,21 @@ export default function CarrierProfileForm({ carrier }) {
           {[
             { label: 'Legal company name', value: carrier?.legal_company_name },
             { label: 'GST number', value: carrier?.gst_number },
-            { label: 'Registration number', value: carrier?.company_registration_number },
+            {
+              label: 'Registration number',
+              value: carrier?.company_registration_number,
+            },
             { label: 'City', value: carrier?.city },
             { label: 'Postcode', value: carrier?.postcode },
           ].map((row) => (
-            <div key={row.label} className="flex items-center justify-between py-3 text-sm">
+            <div
+              key={row.label}
+              className="flex items-center justify-between py-3 text-sm"
+            >
               <span className="text-gray-400">{row.label}</span>
-              <span className="text-gray-700 font-medium">{row.value || '—'}</span>
+              <span className="text-gray-700 font-medium">
+                {row.value || '—'}
+              </span>
             </div>
           ))}
         </div>

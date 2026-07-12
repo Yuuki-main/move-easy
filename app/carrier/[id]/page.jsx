@@ -106,7 +106,7 @@ export default async function CarrierProfilePage({ params }) {
                 <span className="text-base shrink-0 mt-0.5">✅</span>
                 <p className="text-sm text-gray-700">
                   <span className="font-semibold">
-                    {Number(totalJobs).toLocaleString('en-IN')} jobs completed
+                    {Number(totalJobs).toLocaleString('en-NZ')} jobs completed
                   </span>{' '}
                   across New Zealand
                 </p>
@@ -215,7 +215,7 @@ export default async function CarrierProfilePage({ params }) {
                       ? `${pickupCity} → ${deliveryCity}`
                       : null
                   const reviewDate = new Date(r.created_at).toLocaleDateString(
-                    'en-IN',
+                    'en-NZ',
                     { day: 'numeric', month: 'long', year: 'numeric' },
                   )
 

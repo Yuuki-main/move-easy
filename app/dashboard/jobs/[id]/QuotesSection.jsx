@@ -62,7 +62,7 @@ export default function QuotesSection({ quotes, job, userId }) {
                   <span className="text-sm text-gray-400">Not selected</span>
                 ) : (
                   <span className="font-bold text-gray-900 text-sm">
-                    ₹{Number(quote.price).toLocaleString('en-IN')}
+                    ${Number(quote.price).toLocaleString('en-NZ')}
                   </span>
                 )}
                 <svg
@@ -120,7 +120,7 @@ export default function QuotesSection({ quotes, job, userId }) {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-black text-gray-900">
-                        ₹{Number(quote.price).toLocaleString('en-IN')}
+                        ${Number(quote.price).toLocaleString('en-NZ')}
                       </p>
                       <p className="text-xs text-gray-400">final price</p>
                       <p className="text-xs text-gray-400">no hidden costs</p>
@@ -219,7 +219,7 @@ export default function QuotesSection({ quotes, job, userId }) {
                       <span className="text-gray-400 shrink-0 w-36">Time frame</span>
                       <span className="text-gray-700 text-right">
                         {job.move_date
-                          ? new Date(job.move_date).toLocaleDateString('en-IN', {
+                          ? new Date(job.move_date).toLocaleDateString('en-NZ', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric',
@@ -263,7 +263,7 @@ export default function QuotesSection({ quotes, job, userId }) {
                           </p>
                           <p className="text-xs text-gray-400 mt-2">
                             Reviewed{' '}
-                            {new Date(recentReview.created_at).toLocaleDateString('en-IN', {
+                            {new Date(recentReview.created_at).toLocaleDateString('en-NZ', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric',

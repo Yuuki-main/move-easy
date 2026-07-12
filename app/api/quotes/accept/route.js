@@ -101,8 +101,8 @@ export async function POST(req) {
     subject: '🎉 Your quote was accepted!',
     html: `
       <h2>Quote accepted!</h2>
-      <p>A customer has accepted your quote of <strong>₹${acceptedQuote.price}</strong>.</p>
-      <p>A platform fee of <strong>₹${platformFee}</strong> (18%) has been deducted from your wallet.</p>
+      <p>A customer has accepted your quote of <strong>$${acceptedQuote.price}</strong>.</p>
+      <p>A platform fee of <strong>$${platformFee}</strong> (18%) has been deducted from your wallet.</p>
       <p>Log in to view the job and start messaging the customer.</p>
       <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/carrier/jobs/${jobId}"
          style="background:#2563eb;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">

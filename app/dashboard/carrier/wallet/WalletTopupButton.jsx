@@ -25,7 +25,7 @@ export default function WalletTopupButton({ amount }) {
       disabled={loading}
       className="border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 rounded-xl py-3 text-sm font-bold text-gray-700 transition-all disabled:opacity-50"
     >
-      {loading ? '...' : `₹${amount}`}
+      {loading ? '...' : `$${amount}`}
     </button>
   )
 }

@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { createClient } from '../../lib/supabase/client'
 
 const TIMEZONES = [
-  '(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi',
+  ' (GMT+12:00) Auckland, Wellington',
   '(GMT+12:00) Auckland, Wellington',
   '(GMT+00:00) London',
   '(GMT-05:00) Eastern Time (US & Canada)',
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     first_name: '',
     email: '',
     phone: '',
-    timezone: '(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi',
+    timezone: ' (GMT+12:00) Auckland, Wellington',
     password: '',
   })
   const [error, setError] = useState('')
@@ -130,7 +130,7 @@ export default function RegisterPage() {
               value={form.phone}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="+91 98765 43210"
+              placeholder="+64 21 234 5678"
             />
             <p className="text-xs text-gray-400 mt-1">
               Only shared with your confirmed carrier.

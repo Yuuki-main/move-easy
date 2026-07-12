@@ -61,7 +61,7 @@ export default async function CarrierWalletPage({ searchParams }) {
       <div className="bg-gray-900 text-white rounded-2xl p-8 mb-6">
         <p className="text-sm text-gray-400 mb-1">Available balance</p>
         <p className="text-4xl font-black">
-          ₹{carrier?.wallet_balance?.toFixed(2) ?? '0.00'}
+          ${carrier?.wallet_balance?.toFixed(2) ?? '0.00'}
         </p>
         <p className="text-xs text-gray-500 mt-2">
           Used to cover 18% platform fee when you win a job
@@ -104,7 +104,7 @@ export default async function CarrierWalletPage({ searchParams }) {
                 <p
                   className={`font-bold text-sm ${tx.type === 'topup' ? 'text-green-600' : 'text-red-500'}`}
                 >
-                  {tx.type === 'topup' ? '+' : '-'}₹{tx.amount}
+                  {tx.type === 'topup' ? '+' : '-'}${tx.amount}
                 </p>
               </div>
             ))}

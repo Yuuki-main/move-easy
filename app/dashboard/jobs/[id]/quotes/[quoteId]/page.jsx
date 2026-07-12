@@ -94,7 +94,7 @@ export default async function QuoteDetailPage({ params }) {
   const carrierAvatar = carrierPhotos[0] ?? null
 
   const moveDateDisplay = job.move_date
-    ? new Date(job.move_date).toLocaleDateString('en-IN', {
+    ? new Date(job.move_date).toLocaleDateString('en-NZ', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -102,7 +102,7 @@ export default async function QuoteDetailPage({ params }) {
     : null
 
   const reviewDateDisplay = recentReview
-    ? new Date(recentReview.created_at).toLocaleDateString('en-IN', {
+    ? new Date(recentReview.created_at).toLocaleDateString('en-NZ', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -211,7 +211,7 @@ export default async function QuoteDetailPage({ params }) {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">
-                ₹{Number(quote.price).toLocaleString('en-IN')}
+                ${Number(quote.price).toLocaleString('en-NZ')}
               </p>
               <p className="text-xs text-gray-400 leading-snug">
                 final price
@@ -248,7 +248,7 @@ export default async function QuoteDetailPage({ params }) {
                 <span className="text-base shrink-0 mt-0.5">✅</span>
                 <p className="text-sm text-gray-700">
                   <span className="font-semibold">
-                    {Number(jobsCompleted).toLocaleString('en-IN')} jobs
+                    {Number(jobsCompleted).toLocaleString('en-NZ')} jobs
                     completed
                   </span>{' '}
                   across New Zealand
@@ -405,7 +405,7 @@ export default async function QuoteDetailPage({ params }) {
         <div className="sticky top-6">
           <div className="border border-gray-200 rounded-2xl p-5 bg-white shadow-sm">
             <p className="text-3xl font-bold text-gray-900">
-              ₹{Number(quote.price).toLocaleString('en-IN')}
+              ${Number(quote.price).toLocaleString('en-NZ')}
             </p>
             <p className="text-xs text-gray-400 mt-1">
               final price

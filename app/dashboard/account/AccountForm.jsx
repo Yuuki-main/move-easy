@@ -11,7 +11,7 @@ export default function AccountForm({ user, profile, carrierProfile }) {
 
   const initial = (profile?.first_name || '?').charAt(0).toUpperCase()
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString('en-IN', {
+    ? new Date(profile.created_at).toLocaleDateString('en-NZ', {
         year: 'numeric',
         month: 'long',
       })

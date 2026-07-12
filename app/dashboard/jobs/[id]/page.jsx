@@ -97,7 +97,7 @@ export default async function CustomerJobDetailPage({ params }) {
       case 'asap': return 'ASAP'
       case 'specific':
         return job.move_date_from
-          ? new Date(job.move_date_from).toLocaleDateString('en-IN', {
+          ? new Date(job.move_date_from).toLocaleDateString('en-NZ', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -105,7 +105,7 @@ export default async function CustomerJobDetailPage({ params }) {
           : 'Not set'
       case 'between':
         return job.move_date_from
-          ? new Date(job.move_date_from).toLocaleDateString('en-IN', {
+          ? new Date(job.move_date_from).toLocaleDateString('en-NZ', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -116,7 +116,7 @@ export default async function CustomerJobDetailPage({ params }) {
   })()
 
   const deliveryDateDisplay = job.move_date_to
-    ? new Date(job.move_date_to).toLocaleDateString('en-IN', {
+    ? new Date(job.move_date_to).toLocaleDateString('en-NZ', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -362,7 +362,7 @@ export default async function CustomerJobDetailPage({ params }) {
         </h3>
         <p className="text-xs text-gray-400 mb-5">
           Posted on{' '}
-          {new Date(job.created_at).toLocaleDateString('en-IN', {
+          {new Date(job.created_at).toLocaleDateString('en-NZ', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

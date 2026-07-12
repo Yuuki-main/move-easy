@@ -43,13 +43,13 @@ export default async function AdminTransactionsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-green-50 border border-green-200 rounded-xl p-5">
           <p className="text-2xl font-bold text-green-700">
-            ₹{totalTopups.toFixed(2)}
+            ${totalTopups.toFixed(2)}
           </p>
           <p className="text-sm text-gray-500 mt-1">Total top-ups</p>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-5">
           <p className="text-2xl font-bold text-red-600">
-            ₹{totalFees.toFixed(2)}
+            ${totalFees.toFixed(2)}
           </p>
           <p className="text-sm text-gray-500 mt-1">Platform fees collected</p>
         </div>
@@ -113,12 +113,12 @@ export default async function AdminTransactionsPage() {
                     <span
                       className={`font-bold ${tx.type === 'topup' ? 'text-green-600' : 'text-red-500'}`}
                     >
-                      {tx.type === 'topup' ? '+' : '-'}₹
+                      {tx.type === 'topup' ? '+' : '-'}$
                       {Number(tx.amount).toFixed(2)}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right text-gray-400 text-xs whitespace-nowrap">
-                    {new Date(tx.created_at).toLocaleDateString('en-IN', {
+                    {new Date(tx.created_at).toLocaleDateString('en-NZ', {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 
-const TOPUP_AMOUNTS = [500, 1000, 2000, 5000] // INR amounts
+const TOPUP_AMOUNTS = [500, 1000, 2000, 5000] // NZD amounts
 
 export async function POST(req) {
   const supabase = await createClient()

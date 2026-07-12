@@ -79,7 +79,7 @@ export default async function CustomerDashboardPage() {
               {totalPendingQuotes} quote{totalPendingQuotes > 1 ? 's' : ''}
             </strong>
             {lowestQuote &&
-              `, lowest at ₹${Number(lowestQuote.price).toLocaleString('en-IN')}`}
+              `, lowest at $${Number(lowestQuote.price).toLocaleString('en-NZ')}`}
           </p>
         </div>
       )}
@@ -128,7 +128,7 @@ export default async function CustomerDashboardPage() {
                       </span>
                       {lowestPrice && (
                         <p className="text-xs text-gray-400">
-                          from ₹{Number(lowestPrice).toLocaleString('en-IN')}
+                          from ${Number(lowestPrice).toLocaleString('en-NZ')}
                         </p>
                       )}
                     </div>

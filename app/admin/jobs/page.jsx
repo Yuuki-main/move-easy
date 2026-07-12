@@ -109,7 +109,7 @@ export default async function AdminJobsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-gray-400 text-xs whitespace-nowrap">
-                        {new Date(job.created_at).toLocaleDateString('en-IN', {
+                        {new Date(job.created_at).toLocaleDateString('en-NZ', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',

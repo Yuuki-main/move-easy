@@ -35,7 +35,7 @@ export default async function CarrierDashboardPage() {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div className="bg-gray-900 text-white rounded-xl px-4 py-2 text-sm">
-            💰 ₹{carrier?.wallet_balance?.toFixed(2) ?? '0.00'}
+            💰 ${carrier?.wallet_balance?.toFixed(2) ?? '0.00'}
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">

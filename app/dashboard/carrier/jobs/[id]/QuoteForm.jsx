@@ -17,7 +17,7 @@ export default function QuoteForm({ jobId, existingQuote }) {
         <p className="font-semibold text-teal-800 mb-2">✅ Quote submitted</p>
 
         <p className="text-sm text-teal-700">
-          Your price: <strong>₹{existingQuote.price}</strong>
+          Your price: <strong>${existingQuote.price}</strong>
         </p>
 
         {existingQuote.message && (
@@ -80,7 +80,7 @@ export default function QuoteForm({ jobId, existingQuote }) {
       <div className="space-y-4">
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-700">
-            Your price (₹)
+            Your price ($)
             <span className="text-red-400"> *</span>
           </label>
 

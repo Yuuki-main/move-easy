@@ -40,7 +40,7 @@ export default async function AdminOverview() {
     { label: 'Total Bookings', value: totalBookings ?? 0 },
     {
       label: 'Platform Earnings',
-      value: `₹${totalEarnings.toFixed(2)}`,
+      value: `$${totalEarnings.toFixed(2)}`,
       highlight: true,
       green: true,
     },
