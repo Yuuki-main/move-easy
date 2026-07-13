@@ -20,6 +20,7 @@ export default function WalletTopup() {
     const data = await res.json()
     if (data.error) {
       alert(data.error)
+      console.log('Data', data.error)
       setLoading(false)
     } else if (data.url) {
       window.location.href = data.url
