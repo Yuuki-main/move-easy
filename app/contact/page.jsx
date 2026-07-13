@@ -66,10 +66,10 @@ export default function ContactPage() {
                 For general enquiries, booking issues, or feedback.
               </p>
               <a
-                href="mailto:support@movingez.co.nz"
+                href="mailto:support@movingeasy.co.nz"
                 className="text-blue-600 font-semibold hover:underline text-sm"
               >
-                support@movingez.co.nz
+                support@movingeasy.co.nz
               </a>
             </div>
           </div>
@@ -80,7 +80,9 @@ export default function ContactPage() {
               🚛
             </div>
             <div>
-              <h2 className="font-bold text-zinc-900 text-lg mb-1">Become a carrier</h2>
+              <h2 className="font-bold text-zinc-900 text-lg mb-1">
+                Become a carrier
+              </h2>
               <p className="text-zinc-500 text-sm mb-3">
                 Want to earn money doing what you do? Join our carrier network.
               </p>
@@ -108,7 +110,10 @@ export default function ContactPage() {
 
         <div className="grid sm:grid-cols-3 gap-6">
           {REVIEWS.map((r) => (
-            <div key={r.name} className="rounded-2xl border border-zinc-100 bg-white p-6 flex flex-col gap-4 shadow-sm">
+            <div
+              key={r.name}
+              className="rounded-2xl border border-zinc-100 bg-white p-6 flex flex-col gap-4 shadow-sm"
+            >
               {/* Score */}
               <div className="flex items-center gap-2">
                 <span className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-900 text-white text-sm font-bold">
@@ -129,12 +134,16 @@ export default function ContactPage() {
               </div>
 
               {/* Quote */}
-              <p className="text-zinc-600 text-sm leading-relaxed flex-1">&ldquo;{r.text}&rdquo;</p>
+              <p className="text-zinc-600 text-sm leading-relaxed flex-1">
+                &ldquo;{r.text}&rdquo;
+              </p>
 
               {/* Meta */}
               <div className="pt-3 border-t border-zinc-100 space-y-1">
                 <p className="text-xs font-semibold text-zinc-800">{r.name}</p>
-                <p className="text-xs text-zinc-400">{r.jobType} · {r.price}</p>
+                <p className="text-xs text-zinc-400">
+                  {r.jobType} · {r.price}
+                </p>
                 <p className="text-xs text-zinc-400">{r.location}</p>
               </div>
             </div>
