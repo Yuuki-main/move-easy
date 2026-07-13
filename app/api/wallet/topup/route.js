@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 
-const TOPUP_AMOUNTS = [500, 1000, 2000, 5000] // NZD amounts
-
 export async function POST(req) {
   const supabase = await createClient()
   const {
@@ -13,17 +11,22 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
   const { amount } = await req.json()
-  if (!TOPUP_AMOUNTS.includes(amount))
-    return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+  if (
+    typeof amount !== 'number' ||
+    !Number.isFinite(amount) ||
+    amount < 10 ||
+    amount > 10000
+  )
+    return NextResponse.json({ error: 'Amount must be between $10 and $10,000' }, { status: 400 })
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
       {
         price_data: {
-          currency: 'inr',
+          currency: 'nzd',
           product_data: { name: 'Move Easy Wallet Top-up' },
-          unit_amount: amount * 100, // paise
+          unit_amount: amount * 100, // cents
         },
         quantity: 1,
       },

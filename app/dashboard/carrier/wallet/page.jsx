@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import WalletTopupButton from './WalletTopupButton'
+import WalletTopup from './WalletTopupButton'
 
 export default async function CarrierWalletPage({ searchParams }) {
   const supabase = await createClient()
@@ -72,13 +72,9 @@ export default async function CarrierWalletPage({ searchParams }) {
       <div className="bg-white rounded-xl border p-6 mb-6">
         <h2 className="font-bold text-lg mb-4">Add funds</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Select an amount to add to your wallet via Stripe.
+          Enter an amount to add to your wallet via Stripe.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[500, 1000, 2000, 5000].map((amount) => (
-            <WalletTopupButton key={amount} amount={amount} />
-          ))}
-        </div>
+        <WalletTopup />
       </div>
 
       {/* Transaction history */}
