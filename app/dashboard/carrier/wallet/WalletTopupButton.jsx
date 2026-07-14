@@ -7,7 +7,7 @@ export default function WalletTopup() {
 
   const handleTopup = async () => {
     const num = parseInt(amount, 10)
-    if (!num || num < 10 || num > 10000) {
+    if (!num || num < 1 || num > 10000) {
       alert('Enter an amount between $10 and $10,000')
       return
     }
