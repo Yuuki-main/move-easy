@@ -23,7 +23,7 @@ export async function POST(req) {
           price_data: {
             currency: 'nzd',
             product_data: {
-              name: 'Move Easy Wallet Top-up',
+              name: 'Moving Easy Wallet Top-up',
             },
             unit_amount: amount * 100,
           },
