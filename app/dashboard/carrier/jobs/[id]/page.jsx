@@ -25,6 +25,15 @@ export default async function CarrierJobDetailPage({ params }) {
 
   const user = session.user
 
+  // Fetch carrier wallet balance
+  const { data: carrier } = await supabase
+    .from('carrier_profiles')
+    .select('wallet_balance')
+    .eq('id', user.id)
+    .single()
+
+  const walletBalance = carrier?.wallet_balance ?? 0
+
   const { data: job } = await supabase
     .from('jobs')
     .select(
@@ -169,7 +178,7 @@ export default async function CarrierJobDetailPage({ params }) {
         </div>
       )}
 
-      <QuoteForm jobId={job.id} existingQuote={existingQuote} />
+      <QuoteForm jobId={job.id} existingQuote={existingQuote} walletBalance={walletBalance} />
 
       {existingQuote?.status === 'accepted' && (
         <div className="mt-6">

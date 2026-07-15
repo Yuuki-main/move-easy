@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-export default function QuoteForm({ jobId, existingQuote }) {
+export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
   const [price, setPrice] = useState(existingQuote?.price || '')
   const [message, setMessage] = useState(existingQuote?.message || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const router = useRouter()
+
+  const platformFee = useMemo(() => {
+    if (!price || Number(price) <= 0) return 0
+    return Number(price) * 0.18
+  }, [price])
+
+  const insufficientBalance = price && platformFee > walletBalance
+  const shortfall = insufficientBalance ? (platformFee - walletBalance).toFixed(2) : 0
 
   if (existingQuote) {
     return (
@@ -114,14 +122,53 @@ export default function QuoteForm({ jobId, existingQuote }) {
         </div>
       </div>
 
+      {/* Platform fee breakdown */}
+      {price && Number(price) > 0 && (
+        <div className="mt-4 bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+          <div className="flex justify-between text-gray-600">
+            <span>Your wallet balance</span>
+            <span className="font-medium">${walletBalance.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>Platform fee (18%)</span>
+            <span className="font-medium">${platformFee.toFixed(2)}</span>
+          </div>
+          {insufficientBalance && (
+            <div className="flex justify-between text-red-600 pt-2 border-t border-gray-200">
+              <span>Shortfall</span>
+              <span className="font-semibold">${shortfall}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Insufficient balance warning */}
+      {insufficientBalance && (
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+          <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div>
+            <p className="font-semibold">Insufficient wallet balance</p>
+            <p className="mt-0.5">
+              You need at least <strong>${platformFee.toFixed(2)}</strong> to submit this quote. Add ${shortfall} to your wallet.
+            </p>
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
 
       <button
-        onClick={submit}
+        onClick={insufficientBalance ? () => router.push('/dashboard/carrier/wallet') : submit}
         disabled={loading}
-        className="mt-5 w-full rounded-xl bg-teal-600 py-3.5 font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        className={`mt-5 w-full rounded-xl py-3.5 font-semibold text-white disabled:opacity-50 transition-colors ${
+          insufficientBalance
+            ? 'bg-red-600 hover:bg-red-700'
+            : 'bg-teal-600 hover:bg-teal-700'
+        }`}
       >
-        {loading ? 'Submitting...' : 'Submit Quote'}
+        {loading ? 'Submitting...' : insufficientBalance ? 'Top Up Wallet' : 'Submit Quote'}
       </button>
     </div>
   )

@@ -15,20 +15,24 @@ export default async function CarrierBookingsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: bookings } = await supabase
+  const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
     .select(
       `
       *,
       jobs (
         id, type, pickup_address, delivery_address,
-        move_date, description
+        move_date_from, move_date_to, description
       ),
       quotes (price, message)
     `,
     )
     .eq('carrier_id', user.id)
     .order('created_at', { ascending: false })
+
+  if (bookingsError) {
+    console.error('[CarrierBookingsPage] Supabase error:', bookingsError)
+  }
 
   const confirmed = bookings?.filter((b) => b.status === 'confirmed') ?? []
   const completed = bookings?.filter((b) => b.status === 'completed') ?? []
@@ -54,7 +58,13 @@ export default async function CarrierBookingsPage() {
       </div>
 
       {/* Bookings list */}
-      {!bookings?.length ? (
+      {bookingsError ? (
+        <div className="text-center py-20">
+          <p className="text-red-500 text-sm">
+            Failed to load bookings. Please refresh the page.
+          </p>
+        </div>
+      ) : !bookings?.length ? (
         <div className="text-center py-20">
           <p className="text-gray-400 text-sm mb-4">
             No bookings yet. Start bidding on jobs to get hired.
