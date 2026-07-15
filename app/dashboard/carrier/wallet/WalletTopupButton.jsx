@@ -1,14 +1,28 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function WalletTopup() {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('Wallet topped up successfully!')
+      router.replace('/dashboard/carrier/wallet')
+    } else if (searchParams.get('cancelled') === 'true') {
+      toast('Payment cancelled.')
+      router.replace('/dashboard/carrier/wallet')
+    }
+  }, [searchParams, router])
 
   const handleTopup = async () => {
     const num = parseInt(amount, 10)
     if (!num || num < 1 || num > 10000) {
-      alert('Enter an amount between $10 and $10,000')
+      toast.error('Enter an amount between $1 and $10,000')
       return
     }
     setLoading(true)
@@ -19,8 +33,7 @@ export default function WalletTopup() {
     })
     const data = await res.json()
     if (data.error) {
-      alert(data.error)
-      console.log('Data', data.error)
+      toast.error(data.error)
       setLoading(false)
     } else if (data.url) {
       window.location.href = data.url
@@ -35,7 +48,7 @@ export default function WalletTopup() {
         </span>
         <input
           type="number"
-          min={10}
+          min={1}
           max={10000}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}

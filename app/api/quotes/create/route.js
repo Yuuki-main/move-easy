@@ -42,13 +42,14 @@ export async function POST(req) {
   const platformFee = Number(price) * 0.18
 
   // Prevent bidding if wallet balance is insufficient
-  if ((carrier.wallet_balance || 0) < platformFee) {
+  const currentBalance = carrier.wallet_balance || 0
+  if (currentBalance < platformFee) {
+    const shortfall = (platformFee - currentBalance).toFixed(2)
     return NextResponse.json(
       {
-        error: `Insufficient balance. You need $${platformFee.toFixed(
-          2,
-        )} to bid on this job. Please top up your wallet.`,
+        error: `Insufficient balance`,
         insufficientBalance: true,
+        shortfall,
       },
       { status: 402 },
     )

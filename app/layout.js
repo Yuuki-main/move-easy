@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
@@ -76,6 +77,7 @@ export default function RootLayout({ children }) {
     >
       <body className="flex min-h-full flex-col bg-background text-foreground" suppressHydrationWarning>
         <Providers>
+          <Toaster position="top-right" richColors closeButton />
           <Navbar />
           <main className="flex-1 pt-20">{children}</main>
           <Footer />

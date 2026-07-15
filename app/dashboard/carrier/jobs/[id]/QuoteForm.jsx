@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function QuoteForm({ jobId, existingQuote }) {
   const [price, setPrice] = useState(existingQuote?.price || '')
@@ -56,7 +57,11 @@ export default function QuoteForm({ jobId, existingQuote }) {
       const data = await res.json()
 
       if (data.insufficientBalance) {
-        router.push('/dashboard/carrier/wallet?reason=insufficient-balance')
+        toast.error(
+          `Your wallet balance is too low to submit this quote. Please add another $${data.shortfall} to continue.`,
+          { duration: 6000 },
+        )
+        router.push('/dashboard/carrier/wallet')
         return
       }
 

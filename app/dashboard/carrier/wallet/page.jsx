@@ -1,14 +1,15 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import WalletTopup from './WalletTopupButton'
 
-export default async function CarrierWalletPage({ searchParams }) {
+export default async function CarrierWalletPage() {
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
-  const user = session.user
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
   const { data: carrier } = await supabase
     .from('carrier_profiles')
     .select('wallet_balance, public_name')
@@ -22,51 +23,32 @@ export default async function CarrierWalletPage({ searchParams }) {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  const { success, cancelled, reason } = await searchParams
+  const balance = carrier?.wallet_balance ?? 0
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
-      {reason === 'insufficient-balance' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-6">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 shrink-0 text-amber-500">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-            </span>
-            <div>
-              <p className="font-semibold text-amber-800 text-sm">
-                Insufficient wallet balance
-              </p>
-              <p className="text-sm text-amber-700 mt-1 leading-relaxed">
-                You don&apos;t have enough wallet balance to submit this quote.
-                Please add funds to your wallet and then submit your quote again.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-sm text-green-700">
-          ✅ Wallet topped up successfully!
-        </div>
-      )}
-      {cancelled && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-sm text-yellow-700">
-          Payment cancelled.
-        </div>
-      )}
-
       {/* Balance card */}
       <div className="bg-gray-900 text-white rounded-2xl p-8 mb-6">
         <p className="text-sm text-gray-400 mb-1">Available balance</p>
-        <p className="text-4xl font-black">
-          ${carrier?.wallet_balance?.toFixed(2) ?? '0.00'}
-        </p>
+        <p className="text-4xl font-black">${balance.toFixed(2)}</p>
         <p className="text-xs text-gray-500 mt-2">
           Used to cover 18% platform fee when you win a job
         </p>
       </div>
+
+      {/* Empty wallet info card */}
+      {balance === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
+          <span className="mt-0.5 shrink-0 text-blue-500">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+          </span>
+          <p className="text-sm text-blue-800">
+            Your wallet is empty. Add funds before submitting quotes.
+          </p>
+        </div>
+      )}
 
       {/* Top up options */}
       <div className="bg-white rounded-xl border p-6 mb-6">
@@ -74,7 +56,9 @@ export default async function CarrierWalletPage({ searchParams }) {
         <p className="text-sm text-gray-500 mb-4">
           Enter an amount to add to your wallet via Stripe.
         </p>
-        <WalletTopup />
+        <Suspense fallback={null}>
+          <WalletTopup />
+        </Suspense>
       </div>
 
       {/* Transaction history */}
