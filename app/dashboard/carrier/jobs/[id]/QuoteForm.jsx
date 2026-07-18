@@ -17,8 +17,9 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
     return Number(price) * 0.18
   }, [price])
 
-  const insufficientBalance = price && platformFee > walletBalance
-  const shortfall = insufficientBalance ? (platformFee - walletBalance).toFixed(2) : 0
+  // Minimum $1 wallet balance required to submit a quote
+  const insufficientBalance = walletBalance < 1
+  const balanceShortfall = insufficientBalance ? (1 - walletBalance).toFixed(2) : 0
 
   if (existingQuote) {
     return (
@@ -130,15 +131,12 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
             <span className="font-medium">${walletBalance.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
-            <span>Platform fee (18%)</span>
+            <span>Platform fee (18% of quote)</span>
             <span className="font-medium">${platformFee.toFixed(2)}</span>
           </div>
-          {insufficientBalance && (
-            <div className="flex justify-between text-red-600 pt-2 border-t border-gray-200">
-              <span>Shortfall</span>
-              <span className="font-semibold">${shortfall}</span>
-            </div>
-          )}
+          <p className="text-xs text-gray-400 pt-1 border-t border-gray-200">
+            This fee will be deducted from your wallet if the customer accepts your quote.
+          </p>
         </div>
       )}
 
@@ -149,9 +147,9 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <div>
-            <p className="font-semibold">Insufficient wallet balance</p>
+            <p className="font-semibold">Minimum $1.00 balance required</p>
             <p className="mt-0.5">
-              You need at least <strong>${platformFee.toFixed(2)}</strong> to submit this quote. Add ${shortfall} to your wallet.
+              You need at least <strong>$1.00</strong> in your wallet to submit a quote. Add ${balanceShortfall} to continue.
             </p>
           </div>
         </div>

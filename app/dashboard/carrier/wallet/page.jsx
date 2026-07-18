@@ -32,12 +32,12 @@ export default async function CarrierWalletPage() {
         <p className="text-sm text-gray-400 mb-1">Available balance</p>
         <p className="text-4xl font-black">${balance.toFixed(2)}</p>
         <p className="text-xs text-gray-500 mt-2">
-          Used to cover 18% platform fee when you win a job
+          A minimum balance of $1.00 is required to submit quotes. An 18% platform fee is deducted when your quote is accepted.
         </p>
       </div>
 
-      {/* Empty wallet info card */}
-      {balance === 0 && (
+      {/* Low balance info card */}
+      {balance < 1 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
           <span className="mt-0.5 shrink-0 text-blue-500">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -45,7 +45,9 @@ export default async function CarrierWalletPage() {
             </svg>
           </span>
           <p className="text-sm text-blue-800">
-            Your wallet is empty. Add funds before submitting quotes.
+            {balance <= 0
+              ? 'Your balance is $0.00 or below. You need at least $1.00 to submit quotes.'
+              : `You need $${(1 - balance).toFixed(2)} more to reach the $1.00 minimum for submitting quotes.`}
           </p>
         </div>
       )}
@@ -54,7 +56,7 @@ export default async function CarrierWalletPage() {
       <div className="bg-white rounded-xl border p-6 mb-6">
         <h2 className="font-bold text-lg mb-4">Add funds</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Enter an amount to add to your wallet via Stripe.
+          Top up your wallet via Stripe. A minimum balance of $1.00 is needed to submit quotes.
         </p>
         <Suspense fallback={null}>
           <WalletTopup />

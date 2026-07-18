@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { carrierApiSchema } from '@/lib/validations/auth'
 
 export async function POST(req) {
   const supabase = await createClient()
@@ -12,10 +13,30 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
   }
 
-  const body = await req.json()
+  let body
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid JSON in request body' },
+      { status: 400 },
+    )
+  }
+
+  // Server-side Zod validation
+  const parsed = carrierApiSchema.safeParse(body)
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors
+    return NextResponse.json(
+      { error: 'Validation failed', fields: fieldErrors },
+      { status: 400 },
+    )
+  }
+
+  const data = parsed.data
 
   // Generate slug from displayName
-  const slugBase = body.displayName
+  const slugBase = data.displayName
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
@@ -29,16 +50,16 @@ export async function POST(req) {
     .insert({
       id: user.id,
 
-      public_name: body.displayName,
-      profile_description: body.bio,
+      public_name: data.displayName,
+      profile_description: data.bio,
 
-      payment_methods: body.paymentMethods,
+      payment_methods: data.paymentMethods,
 
-      legal_company_name: body.companyName,
-      company_registration_number: body.companyRegNumber,
-      gst_number: body.gstNumber,
+      legal_company_name: data.companyName,
+      company_registration_number: data.companyRegNumber,
+      gst_number: data.gstNumber,
 
-      service_categories: body.categories,
+      service_categories: data.categories,
 
       slug,
 
@@ -57,10 +78,10 @@ export async function POST(req) {
     .insert({
       carrier_id: carrier.id,
 
-      street: body.street,
-      city: body.city,
-      region: body.region,
-      postcode: body.postcode,
+      street: data.street,
+      city: data.city,
+      region: data.region,
+      postcode: data.postcode,
     })
 
   if (addressError) {

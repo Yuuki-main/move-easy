@@ -4,16 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  carrierRegisterSchema,
+  CARRIER_STEP_FIELDS,
+} from '../../lib/validations/auth'
 import { createClient } from '../../lib/supabase/client'
 
-const STEPS = [
-  'Identity',
-  'Address',
-  'Profile',
-  'Company',
-  'Categories',
-  'Finish',
-]
+const STEPS = ['Identity', 'Address', 'Profile', 'Company', 'Categories', 'Finish']
 
 const SERVICE_CATEGORIES = [
   { value: 'home_move', label: 'Home Move' },
@@ -29,13 +28,7 @@ const SERVICE_CATEGORIES = [
   { value: 'other_vehicle', label: 'Other Vehicle' },
 ]
 
-const PAYMENT_METHODS = [
-  'Cash',
-  'Credit Card',
-  'Bank Transfer',
-  'PayPal',
-  'Cheque',
-]
+const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Bank Transfer', 'PayPal', 'Cheque']
 const PAYMENT_TIMEFRAMES = [
   'Before collection',
   'At collection',
@@ -43,133 +36,94 @@ const PAYMENT_TIMEFRAMES = [
   'After delivery',
 ]
 
+const DEFAULT_VALUES = {
+  first_name: '',
+  last_name: '',
+  date_of_birth: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  address_type: 'personal',
+  address_line1: '',
+  address_line2: '',
+  city: '',
+  postcode: '',
+  country: 'New Zealand',
+  public_name: '',
+  profile_description: '',
+  payment_methods: [],
+  payment_timeframes: [],
+  legal_company_name: '',
+  company_registration_number: '',
+  gst_number: '',
+  is_gst_registered: true,
+  is_individual_carrier: false,
+  service_categories: [],
+}
+
 export default function CarrierRegisterPage() {
   const router = useRouter()
   const supabase = createClient()
   const [step, setStep] = useState(0)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const [form, setForm] = useState({
-    // Step 0 - Identity
-    first_name: '',
-    last_name: '',
-    date_of_birth: '',
-    email: '',
-    password: '',
-    // Step 1 - Address
-    address_type: 'personal',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    postcode: '',
-    country: 'New Zealand',
-    // Step 2 - Profile
-    public_name: '',
-    profile_description: '',
-    payment_methods: [],
-    payment_timeframes: [],
-    // Step 3 - Company
-    legal_company_name: '',
-    company_registration_number: '',
-    gst_number: '',
-    is_gst_registered: true,
-    is_individual_carrier: false,
-    // Step 4 - Categories
-    service_categories: [],
+  const {
+    register,
+    handleSubmit,
+    watch,
+    trigger,
+    control,
+    formState: { errors, isSubmitting },
+    setError,
+    setFocus,
+  } = useForm({
+    resolver: zodResolver(carrierRegisterSchema),
+    defaultValues: DEFAULT_VALUES,
   })
 
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
+  const watchIsGst = watch('is_gst_registered')
+  const watchAddressType = watch('address_type')
 
-  function toggleArrayItem(field, value) {
-    setForm((prev) => {
-      const arr = prev[field]
-      return {
-        ...prev,
-        [field]: arr.includes(value)
-          ? arr.filter((v) => v !== value)
-          : [...arr, value],
-      }
-    })
-  }
+  // ── Step navigation with per-step validation ──────────────────────
 
-  function validateStep() {
-    if (step === 0) {
-      if (
-        !form.first_name ||
-        !form.last_name ||
-        !form.email ||
-        !form.password ||
-        !form.date_of_birth
-      ) {
-        setError('Please fill in all required fields.')
-        return false
-      }
-    }
-    if (step === 1) {
-      if (!form.address_line1 || !form.city || !form.country) {
-        setError('Please fill in your address.')
-        return false
-      }
-    }
-    if (step === 2) {
-      if (!form.public_name) {
-        setError('Please enter your public profile name.')
-        return false
-      }
-    }
-    if (step === 4) {
-      if (form.service_categories.length === 0) {
-        setError('Please select at least one service category.')
-        return false
-      }
-    }
-    setError('')
-    return true
-  }
-
-  function nextStep() {
-    if (validateStep()) setStep((s) => s + 1)
+  async function nextStep() {
+    const valid = await trigger(CARRIER_STEP_FIELDS[step])
+    if (valid) setStep((s) => s + 1)
   }
 
   function prevStep() {
-    setError('')
     setStep((s) => s - 1)
   }
 
-  async function handleSubmit() {
-    setLoading(true)
-    setError('')
+  // ── Submit ─────────────────────────────────────────────────────────
 
+  async function onSubmit(data) {
     // 1. Sign up with carrier role metadata
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
         data: {
           role: 'carrier',
-          first_name: form.first_name,
+          first_name: data.first_name,
         },
       },
     })
 
     if (signUpError) {
-      console.error('signUp error:', signUpError)
-      setError(signUpError.message)
-      setLoading(false)
+      setStep(0)
+      if (signUpError.message.toLowerCase().includes('already registered')) {
+        setError('email', { message: 'This email is already registered' })
+      } else {
+        setError('root', { message: signUpError.message })
+      }
+      setFocus('email')
       return
     }
 
-    if (!data?.user) {
-      setError('Registration failed. Please try again.')
-      setLoading(false)
+    if (!authData?.user) {
+      setError('root', { message: 'Registration failed. Please try again.' })
       return
     }
 
@@ -179,13 +133,13 @@ export default function CarrierRegisterPage() {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', data.user.id)
+      .eq('id', authData.user.id)
       .single()
 
     if (profileError || !profile) {
-      console.error('profile fetch error:', profileError)
-      setError('Account created but profile setup failed. Please try logging in.')
-      setLoading(false)
+      setError('root', {
+        message: 'Account created but profile setup failed. Please try logging in.',
+      })
       return
     }
 
@@ -193,63 +147,111 @@ export default function CarrierRegisterPage() {
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        last_name: form.last_name,
-        date_of_birth: form.date_of_birth,
+        last_name: data.last_name,
+        date_of_birth: data.date_of_birth,
       })
-      .eq('id', data.user.id)
+      .eq('id', authData.user.id)
 
     if (updateError) {
-      console.error('profile update error:', updateError)
-      setError(updateError.message)
-      setLoading(false)
+      setError('root', { message: updateError.message })
       return
     }
 
     // 4. Generate slug from public_name
-    const slugBase = form.public_name
+    const slugBase = data.public_name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '')
-    const slug = `${slugBase}-${data.user.id.slice(-4)}`
+    const slug = `${slugBase}-${authData.user.id.slice(-4)}`
 
-    // 5. Insert into carrier_profiles (all fields from form, plus required slug + status)
+    // 5. Insert into carrier_profiles
     const { error: insertError } = await supabase
       .from('carrier_profiles')
       .insert({
-        id: data.user.id,
-        public_name: form.public_name,
-        profile_description: form.profile_description,
-        payment_methods: form.payment_methods,
-        payment_timeframes: form.payment_timeframes,
-        legal_company_name: form.legal_company_name,
-        company_registration_number: form.company_registration_number,
-        gst_number: form.gst_number,
-        is_gst_registered: form.is_gst_registered,
-        is_individual_carrier: form.is_individual_carrier,
-        service_categories: form.service_categories,
-        address_type: form.address_type,
-        address_line1: form.address_line1,
-        address_line2: form.address_line2,
-        city: form.city,
-        postcode: form.postcode,
-        country: form.country,
+        id: authData.user.id,
+        public_name: data.public_name,
+        profile_description: data.profile_description,
+        payment_methods: data.payment_methods,
+        payment_timeframes: data.payment_timeframes,
+        legal_company_name: data.legal_company_name,
+        company_registration_number: data.company_registration_number,
+        gst_number: data.gst_number,
+        is_gst_registered: data.is_gst_registered,
+        is_individual_carrier: data.is_individual_carrier,
+        service_categories: data.service_categories,
+        address_type: data.address_type,
+        address_line1: data.address_line1,
+        address_line2: data.address_line2,
+        city: data.city,
+        postcode: data.postcode,
+        country: data.country,
         slug,
         application_status: 'active',
         submitted_at: new Date().toISOString(),
       })
 
     if (insertError) {
-      console.error('carrier_profiles insert error:', insertError)
-      setError(insertError.message)
-      setLoading(false)
+      setError('root', { message: insertError.message })
       return
     }
 
-    setLoading(false)
     router.push('/dashboard/carrier')
     router.refresh()
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────
+
+  const inputClass = (field) =>
+    `w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      errors[field] ? 'border-red-400 bg-red-50' : 'border-gray-300'
+    }`
+
+  const FieldError = ({ name }) =>
+    errors[name] ? (
+      <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>
+    ) : null
+
+  // Toggle button chip for array fields
+  function ArrayToggle({ name, options }) {
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {options.map((opt) => {
+                const value = typeof opt === 'string' ? opt : opt.value
+                const label = typeof opt === 'string' ? opt : opt.label
+                const selected = field.value.includes(value)
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      const arr = selected
+                        ? field.value.filter((v) => v !== value)
+                        : [...field.value, value]
+                      field.onChange(arr)
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                      selected
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            <FieldError name={name} />
+          </>
+        )}
+      />
+    )
   }
 
   return (
@@ -257,9 +259,7 @@ export default function CarrierRegisterPage() {
       <div className="max-w-xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Carrier Registration
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Carrier Registration</h1>
           <p className="text-sm text-gray-500 mt-1">
             Join as a transport company or independent carrier
           </p>
@@ -279,7 +279,9 @@ export default function CarrierRegisterPage() {
                 {i < step ? '✓' : i + 1}
               </div>
               <span
-                className={`text-xs mt-1 hidden sm:block ${i === step ? 'text-blue-600 font-medium' : 'text-gray-400'}`}
+                className={`text-xs mt-1 hidden sm:block ${
+                  i === step ? 'text-blue-600 font-medium' : 'text-gray-400'
+                }`}
               >
                 {label}
               </span>
@@ -289,42 +291,38 @@ export default function CarrierRegisterPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-md p-8">
-          {error && (
+          {errors.root && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">
-              {error}
+              {errors.root.message}
             </div>
           )}
 
-          {/* Step 0 — Identity */}
+          {/* ── Step 0: Identity ─────────────────────────────── */}
           {step === 0 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Your Identity
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Identity</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     First name *
                   </label>
                   <input
-                    name="first_name"
-                    value={form.first_name}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register('first_name')}
+                    className={inputClass('first_name')}
                     placeholder="First name"
                   />
+                  <FieldError name="first_name" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Last name *
                   </label>
                   <input
-                    name="last_name"
-                    value={form.last_name}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register('last_name')}
+                    className={inputClass('last_name')}
                     placeholder="Last name"
                   />
+                  <FieldError name="last_name" />
                 </div>
               </div>
               <div>
@@ -332,28 +330,26 @@ export default function CarrierRegisterPage() {
                   Date of birth *
                 </label>
                 <input
-                  name="date_of_birth"
                   type="date"
-                  value={form.date_of_birth}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('date_of_birth')}
+                  className={inputClass('date_of_birth')}
                 />
+                <FieldError name="date_of_birth" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email *
                 </label>
                 <input
-                  name="email"
                   type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('email')}
+                  className={inputClass('email')}
                   placeholder="you@company.com"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   We never share it with other users.
                 </p>
+                <FieldError name="email" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -361,11 +357,9 @@ export default function CarrierRegisterPage() {
                 </label>
                 <div className="relative">
                   <input
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register('password')}
+                    className={`${inputClass('password')} pr-10`}
                     placeholder="••••••••"
                   />
                   <button
@@ -376,55 +370,74 @@ export default function CarrierRegisterPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <FieldError name="password" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    {...register('confirmPassword')}
+                    className={`${inputClass('confirmPassword')} pr-10`}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <FieldError name="confirmPassword" />
               </div>
             </div>
           )}
 
-          {/* Step 1 — Address */}
+          {/* ── Step 1: Address ───────────────────────────────── */}
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Your Address
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Address</h2>
               <div className="flex gap-4">
                 {['personal', 'company'].map((type) => (
                   <label
                     key={type}
-                    className={`flex-1 border-2 rounded-lg p-3 cursor-pointer text-sm font-medium text-center transition
-                    ${form.address_type === type ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-500'}`}
+                    className={`flex-1 border-2 rounded-lg p-3 cursor-pointer text-sm font-medium text-center transition ${
+                      watchAddressType === type
+                        ? 'border-blue-500 text-blue-600 bg-blue-50'
+                        : 'border-gray-200 text-gray-500'
+                    }`}
                   >
                     <input
                       type="radio"
-                      name="address_type"
+                      {...register('address_type')}
                       value={type}
-                      checked={form.address_type === type}
-                      onChange={handleChange}
                       className="sr-only"
                     />
                     {type === 'personal' ? '🏠 Personal' : '🏢 Company'}
                   </label>
                 ))}
               </div>
+              <FieldError name="address_type" />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Address line 1 *
                 </label>
                 <input
-                  name="address_line1"
-                  value={form.address_line1}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('address_line1')}
+                  className={inputClass('address_line1')}
                   placeholder="Street address"
                 />
+                <FieldError name="address_line1" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Address line 2
                 </label>
                 <input
-                  name="address_line2"
-                  value={form.address_line2}
-                  onChange={handleChange}
+                  {...register('address_line2')}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Apartment, suite, etc."
                 />
@@ -435,21 +448,18 @@ export default function CarrierRegisterPage() {
                     City *
                   </label>
                   <input
-                    name="city"
-                    value={form.city}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register('city')}
+                    className={inputClass('city')}
                     placeholder="City"
                   />
+                  <FieldError name="city" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Postcode
                   </label>
                   <input
-                    name="postcode"
-                    value={form.postcode}
-                    onChange={handleChange}
+                    {...register('postcode')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Postcode"
                   />
@@ -460,41 +470,35 @@ export default function CarrierRegisterPage() {
                   Country *
                 </label>
                 <input
-                  name="country"
-                  value={form.country}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('country')}
+                  className={inputClass('country')}
                 />
+                <FieldError name="country" />
               </div>
             </div>
           )}
 
-          {/* Step 2 — Profile */}
+          {/* ── Step 2: Profile ───────────────────────────────── */}
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Public Profile
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Public Profile</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Public profile name *
                 </label>
                 <input
-                  name="public_name"
-                  value={form.public_name}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...register('public_name')}
+                  className={inputClass('public_name')}
                   placeholder="How you'll appear to customers"
                 />
+                <FieldError name="public_name" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Profile description
                 </label>
                 <textarea
-                  name="profile_description"
-                  value={form.profile_description}
-                  onChange={handleChange}
+                  {...register('profile_description')}
                   rows={4}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Tell customers about your business and what makes you stand out..."
@@ -502,65 +506,29 @@ export default function CarrierRegisterPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment methods accepted
+                  Payment methods accepted *
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {PAYMENT_METHODS.map((method) => (
-                    <button
-                      key={method}
-                      type="button"
-                      onClick={() => toggleArrayItem('payment_methods', method)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition
-                        ${
-                          form.payment_methods.includes(method)
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                        }`}
-                    >
-                      {method}
-                    </button>
-                  ))}
-                </div>
+                <ArrayToggle name="payment_methods" options={PAYMENT_METHODS} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment timeframes
+                  Payment timeframes *
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {PAYMENT_TIMEFRAMES.map((tf) => (
-                    <button
-                      key={tf}
-                      type="button"
-                      onClick={() => toggleArrayItem('payment_timeframes', tf)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition
-                        ${
-                          form.payment_timeframes.includes(tf)
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                        }`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
-                </div>
+                <ArrayToggle name="payment_timeframes" options={PAYMENT_TIMEFRAMES} />
               </div>
             </div>
           )}
 
-          {/* Step 3 — Company */}
+          {/* ── Step 3: Company ───────────────────────────────── */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Company Details
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Company Details</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Legal company name
                 </label>
                 <input
-                  name="legal_company_name"
-                  value={form.legal_company_name}
-                  onChange={handleChange}
+                  {...register('legal_company_name')}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Registered business name"
                 />
@@ -570,9 +538,7 @@ export default function CarrierRegisterPage() {
                   Company registration number
                 </label>
                 <input
-                  name="company_registration_number"
-                  value={form.company_registration_number}
-                  onChange={handleChange}
+                  {...register('company_registration_number')}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. 1234567"
                 />
@@ -582,10 +548,8 @@ export default function CarrierRegisterPage() {
                   GST number
                 </label>
                 <input
-                  name="gst_number"
-                  value={form.gst_number}
-                  onChange={handleChange}
-                  disabled={!form.is_gst_registered}
+                  {...register('gst_number')}
+                  disabled={!watchIsGst}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
                   placeholder="GST registration number"
                 />
@@ -593,9 +557,7 @@ export default function CarrierRegisterPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  name="is_gst_registered"
-                  checked={form.is_gst_registered}
-                  onChange={handleChange}
+                  {...register('is_gst_registered')}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">GST registered</span>
@@ -603,9 +565,7 @@ export default function CarrierRegisterPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  name="is_individual_carrier"
-                  checked={form.is_individual_carrier}
-                  onChange={handleChange}
+                  {...register('is_individual_carrier')}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">
@@ -615,7 +575,7 @@ export default function CarrierRegisterPage() {
             </div>
           )}
 
-          {/* Step 4 — Categories */}
+          {/* ── Step 4: Categories ─────────────────────────────── */}
           {step === 4 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-800 mb-1">
@@ -625,26 +585,42 @@ export default function CarrierRegisterPage() {
                 Select at least one category you operate in.
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {SERVICE_CATEGORIES.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleArrayItem('service_categories', value)}
-                    className={`px-4 py-2.5 rounded-lg text-sm border text-left transition
-                      ${
-                        form.service_categories.includes(value)
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                      }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <Controller
+                  name="service_categories"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      {SERVICE_CATEGORIES.map(({ value, label }) => {
+                        const selected = field.value.includes(value)
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => {
+                              const arr = selected
+                                ? field.value.filter((v) => v !== value)
+                                : [...field.value, value]
+                              field.onChange(arr)
+                            }}
+                            className={`px-4 py-2.5 rounded-lg text-sm border text-left transition ${
+                              selected
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </>
+                  )}
+                />
               </div>
+              <FieldError name="service_categories" />
             </div>
           )}
 
-          {/* Step 5 — Finish */}
+          {/* ── Step 5: Finish ─────────────────────────────────── */}
           {step === 5 && (
             <div className="text-center space-y-4">
               <div className="text-5xl mb-4">🚚</div>
@@ -657,29 +633,29 @@ export default function CarrierRegisterPage() {
               </p>
               <div className="bg-gray-50 rounded-lg p-4 text-left text-sm text-gray-600 space-y-1">
                 <p>
-                  <span className="font-medium">Name:</span> {form.first_name}{' '}
-                  {form.last_name}
+                  <span className="font-medium">Name:</span>{' '}
+                  {watch('first_name')} {watch('last_name')}
                 </p>
                 <p>
-                  <span className="font-medium">Email:</span> {form.email}
+                  <span className="font-medium">Email:</span> {watch('email')}
                 </p>
                 <p>
-                  <span className="font-medium">City:</span> {form.city},{' '}
-                  {form.country}
+                  <span className="font-medium">City:</span> {watch('city')},{' '}
+                  {watch('country')}
                 </p>
                 <p>
                   <span className="font-medium">Public name:</span>{' '}
-                  {form.public_name}
+                  {watch('public_name')}
                 </p>
                 <p>
                   <span className="font-medium">Services:</span>{' '}
-                  {form.service_categories.join(', ')}
+                  {watch('service_categories').join(', ')}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Navigation buttons */}
+          {/* ── Navigation buttons ─────────────────────────────── */}
           <div className="flex justify-between mt-8">
             {step > 0 ? (
               <button
@@ -706,11 +682,11 @@ export default function CarrierRegisterPage() {
               </button>
             ) : (
               <button
-                onClick={handleSubmit}
-                disabled={loading}
+                onClick={handleSubmit(onSubmit)}
+                disabled={isSubmitting}
                 className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition disabled:opacity-50"
               >
-                {loading ? 'Submitting...' : 'Submit application'}
+                {isSubmitting ? 'Submitting...' : 'Submit application'}
               </button>
             )}
           </div>
