@@ -220,7 +220,7 @@ const sections = [
     title: 'Limitation of Liability',
     body: [
       'To the maximum extent permitted by law, Movingeasy is not liable for any loss, damage, cost, or claim arising out of or in connection with the website, any booking, or any services booked through the website.',
-      "If Movingeasy is found liable for any reason, its total liability is limited to the amount of fees paid to Movingeasy in connection with the relevant booking.",
+      'If Movingeasy is found liable for any reason, its total liability is limited to the amount of fees paid to Movingeasy in connection with the relevant booking.',
       'Movingeasy is not liable for any indirect or consequential loss, including loss of income, profit, business, goodwill, reputation, opportunity, or expected savings.',
     ],
   },
@@ -284,20 +284,17 @@ export default function TermsPage() {
             Terms and Conditions
           </h1>
           <p className="text-sm text-gray-500">
-            These Terms and Conditions govern access to and use of the Movingeasy website,
-            platform, applications, and related services in New Zealand.
+            These Terms and Conditions govern access to and use of the
+            Movingeasy website, platform, applications, and related services in
+            New Zealand.
           </p>
           <p className="text-sm text-gray-500 mt-2">
             Movingeasy is operated by{' '}
             <span className="font-semibold text-gray-700">
-              Movingeasy Enterprises Pte. Ltd. (UEN 202515336N)
+              Moving Easy Limited (NZBN 9429049568165)
             </span>
-            , a company incorporated in Singapore.
+            , a company incorporated in New Zealand.
           </p>
-          <div className="mt-5 inline-block bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium px-3 py-2 rounded-lg">
-            By accessing or using Movingeasy, you agree to these Terms and Conditions. If you
-            do not agree, you must not use Movingeasy.
-          </div>
         </div>
       </div>
 
@@ -313,7 +310,9 @@ export default function TermsPage() {
                 href={`#section-${s.number}`}
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
-                <span className="font-semibold text-gray-300 mr-2">{s.number}.</span>
+                <span className="font-semibold text-gray-300 mr-2">
+                  {s.number}.
+                </span>
                 {s.title}
               </a>
             </li>
@@ -324,20 +323,29 @@ export default function TermsPage() {
       {/* Sections */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-10 divide-y divide-gray-100">
         {sections.map((s) => (
-          <section key={s.number} id={`section-${s.number}`} className="py-8 scroll-mt-24">
+          <section
+            key={s.number}
+            id={`section-${s.number}`}
+            className="py-8 scroll-mt-24"
+          >
             <h2 className="text-lg font-bold text-gray-900 mb-4">
               <span className="text-gray-300 mr-2">{s.number}.</span>
               {s.title}
             </h2>
 
             {s.intro && (
-              <p className="text-sm text-gray-600 leading-relaxed mb-3">{s.intro}</p>
+              <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                {s.intro}
+              </p>
             )}
 
             {s.bullets && (
               <ul className="list-disc list-outside ml-4 mb-4 space-y-1.5">
                 {s.bullets.map((b, i) => (
-                  <li key={i} className="text-sm text-gray-600 leading-relaxed pl-1">
+                  <li
+                    key={i}
+                    className="text-sm text-gray-600 leading-relaxed pl-1"
+                  >
                     {b}
                   </li>
                 ))}

@@ -52,6 +52,21 @@ export default async function CarrierJobsPage() {
     .order('created_at', { ascending: false })
     .limit(30)
 
+  function getShortAddress(address) {
+    if (!address) return ''
+
+    const parts = address
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+
+    if (parts.length >= 2) {
+      return `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`
+    }
+
+    return address
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Available Jobs</h1>
@@ -75,13 +90,13 @@ export default async function CarrierJobsPage() {
                   </span>
 
                   <p className="font-medium text-gray-800">
-                    {job.pickup_address}
+                    Pickup: {getShortAddress(job.pickup_address)}
                   </p>
 
                   <p className="text-gray-400 text-sm my-1">↓</p>
 
                   <p className="font-medium text-gray-800">
-                    {job.delivery_address}
+                    Delivery: {getShortAddress(job.delivery_address)}
                   </p>
 
                   {/* Use whichever date field exists in your schema */}

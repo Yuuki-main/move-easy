@@ -19,7 +19,9 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
 
   // Minimum $1 wallet balance required to submit a quote
   const insufficientBalance = walletBalance < 1
-  const balanceShortfall = insufficientBalance ? (1 - walletBalance).toFixed(2) : 0
+  const balanceShortfall = insufficientBalance
+    ? (1 - walletBalance).toFixed(2)
+    : 0
 
   if (existingQuote) {
     return (
@@ -130,12 +132,13 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
             <span>Your wallet balance</span>
             <span className="font-medium">${walletBalance.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-600">
+          {/* <div className="flex justify-between text-gray-600">
             <span>Platform fee (18% of quote)</span>
             <span className="font-medium">${platformFee.toFixed(2)}</span>
-          </div>
+          </div> */}
           <p className="text-xs text-gray-400 pt-1 border-t border-gray-200">
-            This fee will be deducted from your wallet if the customer accepts your quote.
+            This fee will be deducted from your wallet if the customer accepts
+            your quote.
           </p>
         </div>
       )}
@@ -143,13 +146,24 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
       {/* Insufficient balance warning */}
       {insufficientBalance && (
         <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-          <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          <svg
+            className="h-5 w-5 shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
           </svg>
           <div>
             <p className="font-semibold">Minimum $1.00 balance required</p>
             <p className="mt-0.5">
-              You need at least <strong>$1.00</strong> in your wallet to submit a quote. Add ${balanceShortfall} to continue.
+              You need at least <strong>$1.00</strong> in your wallet to submit
+              a quote. Add ${balanceShortfall} to continue.
             </p>
           </div>
         </div>
@@ -158,7 +172,11 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
       {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
 
       <button
-        onClick={insufficientBalance ? () => router.push('/dashboard/carrier/wallet') : submit}
+        onClick={
+          insufficientBalance
+            ? () => router.push('/dashboard/carrier/wallet')
+            : submit
+        }
         disabled={loading}
         className={`mt-5 w-full rounded-xl py-3.5 font-semibold text-white disabled:opacity-50 transition-colors ${
           insufficientBalance
@@ -166,7 +184,11 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
             : 'bg-teal-600 hover:bg-teal-700'
         }`}
       >
-        {loading ? 'Submitting...' : insufficientBalance ? 'Top Up Wallet' : 'Submit Quote'}
+        {loading
+          ? 'Submitting...'
+          : insufficientBalance
+            ? 'Top Up Wallet'
+            : 'Submit Quote'}
       </button>
     </div>
   )
