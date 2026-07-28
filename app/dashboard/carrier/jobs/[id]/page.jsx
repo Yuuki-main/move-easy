@@ -60,6 +60,21 @@ export default async function CarrierJobDetailPage({ params }) {
 
   const photos = job.job_photos || []
 
+  function getShortAddress(address) {
+    if (!address) return ''
+
+    const parts = address
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+
+    if (parts.length >= 2) {
+      return `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`
+    }
+
+    return address
+  }
+
   return (
     <div className="max-w-2xl">
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -78,7 +93,7 @@ export default async function CarrierJobDetailPage({ params }) {
               <p className="text-xs text-gray-400 mb-1">Pickup</p>
 
               <p className="text-sm font-medium text-gray-800">
-                {job.pickup_address}
+                {getShortAddress(job.pickup_address)}
               </p>
             </div>
           </div>
@@ -92,7 +107,7 @@ export default async function CarrierJobDetailPage({ params }) {
               <p className="text-xs text-gray-400 mb-1">Delivery</p>
 
               <p className="text-sm font-medium text-gray-800">
-                {job.delivery_address}
+                {getShortAddress(job.delivery_address)}
               </p>
             </div>
           </div>
@@ -178,7 +193,11 @@ export default async function CarrierJobDetailPage({ params }) {
         </div>
       )}
 
-      <QuoteForm jobId={job.id} existingQuote={existingQuote} walletBalance={walletBalance} />
+      <QuoteForm
+        jobId={job.id}
+        existingQuote={existingQuote}
+        walletBalance={walletBalance}
+      />
 
       {existingQuote?.status === 'accepted' && (
         <div className="mt-6">

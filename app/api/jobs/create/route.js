@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { uploadToS3 } from '@/lib/uploadToS3'
+import { sendEmail } from '@/lib/email'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function POST(req) {
   console.log('===== API HIT: /api/jobs/create =====')
@@ -224,6 +226,84 @@ export async function POST(req) {
   }
 
   console.log('[DEBUG] Photo upload loop finished')
+
+  // --------------------------------------------------
+  // NOTIFY ALL ACTIVE CARRIERS ABOUT THE NEW JOB
+  // (non-blocking — job is already saved)
+  // --------------------------------------------------
+  try {
+    const { data: carriers, error: carriersError } = await supabaseAdmin
+      .from('carrier_profiles')
+      .select('id, email, public_name')
+      .eq('application_status', 'active')
+      .not('email', 'is', null)
+
+    if (carriersError) throw new Error(`Carrier fetch failed: ${carriersError.message}`)
+
+    if (carriers?.length > 0) {
+      const customerName = user.user_metadata?.first_name || user.email?.split('@')[0] || 'Someone'
+      const jobType = jobType?.replace(/_/g, ' ') || 'move'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+
+      await Promise.all(
+        carriers.map((carrier) =>
+          sendEmail({
+            to: carrier.email,
+            subject: `New ${jobType} request available`,
+            html: `
+              <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1f2937">
+                <h2 style="color:#111827;font-size:22px;margin:0 0 8px">New move request!</h2>
+                <p style="color:#6b7280;font-size:14px;margin:0 0 24px;line-height:1.5">
+                  Hi ${carrier.public_name || 'there'},<br/>
+                  <strong>${customerName}</strong> just posted a new <strong>${jobType}</strong> request on Moving Easy.
+                </p>
+
+                <div style="background:#f9fafb;border-radius:12px;padding:20px;margin-bottom:24px">
+                  <table style="width:100%;border-collapse:collapse;font-size:14px">
+                    ${pickupAddress ? `
+                    <tr>
+                      <td style="padding:6px 0;color:#6b7280">Pickup</td>
+                      <td style="padding:6px 0;text-align:right;color:#374151">${pickupAddress}</td>
+                    </tr>` : ''}
+                    ${deliveryAddress ? `
+                    <tr>
+                      <td style="padding:6px 0;color:#6b7280">Delivery</td>
+                      <td style="padding:6px 0;text-align:right;color:#374151">${deliveryAddress}</td>
+                    </tr>` : ''}
+                    ${moveDateFrom ? `
+                    <tr>
+                      <td style="padding:6px 0;color:#6b7280">Earliest date</td>
+                      <td style="padding:6px 0;text-align:right;color:#374151">${moveDateFrom}</td>
+                    </tr>` : ''}
+                    ${description ? `
+                    <tr>
+                      <td style="padding:6px 0;color:#6b7280">Description</td>
+                      <td style="padding:6px 0;text-align:right;color:#374151;font-style:italic">${description.slice(0, 120)}${description.length > 120 ? '...' : ''}</td>
+                    </tr>` : ''}
+                    <tr>
+                      <td style="padding:6px 0;color:#6b7280">Job reference</td>
+                      <td style="padding:6px 0;text-align:right;font-family:monospace;color:#6b7280;font-size:12px">#${job.id.slice(0, 8)}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <a href="${appUrl}/dashboard/carrier/jobs/${job.id}"
+                   style="background:#2563eb;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px;margin-bottom:24px">
+                  View & Submit Quote →
+                </a>
+
+                <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;line-height:1.5">
+                  You received this email because you're an active carrier on Moving Easy. New requests are shared with all carriers.
+                </p>
+              </div>
+            `,
+          }),
+        ),
+      )
+    }
+  } catch (emailErr) {
+    console.error('[jobs/create] Carrier notification failed:', emailErr)
+  }
 
   return NextResponse.json({
     success: true,
