@@ -16,7 +16,7 @@ export default async function Navbar() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, role')
+    .select('first_name, role, is_admin')
     .eq('id', user.id)
     .single()
 
@@ -45,6 +45,7 @@ export default async function Navbar() {
       firstName={profile?.first_name || null}
       role={profile?.role || null}
       unreadCount={unreadCount}
+      isAdmin={profile?.is_admin || false}
     />
   )
 }

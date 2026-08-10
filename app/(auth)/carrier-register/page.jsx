@@ -188,7 +188,7 @@ export default function CarrierRegisterPage() {
         postcode: data.postcode,
         country: data.country,
         slug,
-        application_status: 'active',
+        application_status: 'pending',
         submitted_at: new Date().toISOString(),
       })
 

@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service-role'
 import Link from 'next/link'
 
 export default async function AdminOverview() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { count: totalJobs } = await supabase
     .from('jobs')
@@ -21,7 +21,6 @@ export default async function AdminOverview() {
     .from('bookings')
     .select('*', { count: 'exact', head: true })
 
-  // Platform earnings = sum of all fee deductions
   const { data: fees } = await supabase
     .from('wallet_transactions')
     .select('amount')
@@ -72,7 +71,6 @@ export default async function AdminOverview() {
         ))}
       </div>
 
-      {/* Quick links */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
           href="/admin/carriers"

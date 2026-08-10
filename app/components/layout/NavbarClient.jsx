@@ -5,7 +5,19 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { Truck, Menu, X, ChevronDown, User, LogOut, Info, Phone } from 'lucide-react'
+import {
+  Truck,
+  Menu,
+  X,
+  ChevronDown,
+  User,
+  LogOut,
+  Info,
+  Phone,
+  Settings,
+  LayoutDashboard,
+  Lock,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -32,8 +44,18 @@ const ITEM_VARIANTS = {
 }
 
 const RESOURCES_ITEMS = [
-  { label: 'About us', href: '/about', icon: Info, desc: 'Our story and mission' },
-  { label: 'Contact us', href: '/contact', icon: Phone, desc: 'Get in touch with us' },
+  {
+    label: 'About us',
+    href: '/about',
+    icon: Info,
+    desc: 'Our story and mission',
+  },
+  {
+    label: 'Contact us',
+    href: '/contact',
+    icon: Phone,
+    desc: 'Get in touch with us',
+  },
 ]
 
 function getNavLinks(role) {
@@ -52,7 +74,7 @@ function getNavLinks(role) {
   ]
 }
 
-export default function NavbarClient({ user, firstName, role, unreadCount }) {
+export default function NavbarClient({ user, firstName, role, unreadCount, isAdmin }) {
   const isCarrier = role === 'carrier'
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -160,22 +182,26 @@ export default function NavbarClient({ user, firstName, role, unreadCount }) {
                       transition={{ duration: 0.15 }}
                       className="absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-zinc-100 py-2 z-50"
                     >
-                      {RESOURCES_ITEMS.map(({ label, href, icon: Icon, desc }) => (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={() => setResourcesOpen(false)}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors group"
-                        >
-                          <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 group-hover:bg-zinc-200 transition-colors">
-                            <Icon size={14} className="text-zinc-600" />
-                          </span>
-                          <div>
-                            <p className="text-sm font-medium text-zinc-900">{label}</p>
-                            <p className="text-xs text-zinc-400">{desc}</p>
-                          </div>
-                        </Link>
-                      ))}
+                      {RESOURCES_ITEMS.map(
+                        ({ label, href, icon: Icon, desc }) => (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={() => setResourcesOpen(false)}
+                            className="flex items-start gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors group"
+                          >
+                            <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 group-hover:bg-zinc-200 transition-colors">
+                              <Icon size={14} className="text-zinc-600" />
+                            </span>
+                            <div>
+                              <p className="text-sm font-medium text-zinc-900">
+                                {label}
+                              </p>
+                              <p className="text-xs text-zinc-400">{desc}</p>
+                            </div>
+                          </Link>
+                        ),
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -219,7 +245,11 @@ export default function NavbarClient({ user, firstName, role, unreadCount }) {
                         </div>
 
                         <Link
-                          href={isCarrier ? '/dashboard/carrier/jobs' : '/dashboard/jobs'}
+                          href={
+                            isCarrier
+                              ? '/dashboard/carrier/jobs'
+                              : '/dashboard/jobs'
+                          }
                           onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                         >
@@ -232,7 +262,7 @@ export default function NavbarClient({ user, firstName, role, unreadCount }) {
                           onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                         >
-                          <User size={15} />
+                          <LayoutDashboard size={15} />
                           Dashboard
                         </Link>
 
@@ -244,6 +274,26 @@ export default function NavbarClient({ user, firstName, role, unreadCount }) {
                           <User size={15} />
                           Account
                         </Link>
+
+                        <Link
+                          href="/dashboard/carrier/settings"
+                          onClick={() => setAvatarOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                        >
+                          <Settings size={15} />
+                          Carrier Settings
+                        </Link>
+
+                        {isAdmin && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setAvatarOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                        >
+                          <Lock size={15} />
+                          Admin
+                        </Link>
+                        )}
 
                         <div className="border-t border-zinc-100 mt-1 pt-1">
                           <button

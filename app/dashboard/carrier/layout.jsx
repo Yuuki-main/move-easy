@@ -17,7 +17,7 @@ const NAV = [
   { href: '/dashboard/carrier/quotes', label: 'My Quotes', icon: MessageSquare },
   { href: '/dashboard/carrier/bookings', label: 'Bookings', icon: Package },
   { href: '/dashboard/carrier/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/dashboard/carrier/profile', label: 'Profile', icon: User },
+  { href: '/dashboard/carrier/settings', label: 'Settings', icon: User },
 ]
 
 export default function CarrierLayout({ children }) {

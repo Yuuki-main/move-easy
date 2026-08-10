@@ -25,12 +25,31 @@ export default async function CarrierJobDetailPage({ params }) {
 
   const user = session.user
 
-  // Fetch carrier wallet balance
+  // Fetch carrier wallet balance + status
   const { data: carrier } = await supabase
     .from('carrier_profiles')
-    .select('wallet_balance')
+    .select('wallet_balance, application_status')
     .eq('id', user.id)
     .single()
+
+  // Pending/rejected carriers cannot quote — show gate instead
+  if (carrier?.application_status !== 'active') {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-24 text-center">
+        <div className="text-5xl mb-6">⏳</div>
+        <h1 className="text-2xl font-bold mb-3">
+          {carrier?.application_status === 'pending'
+            ? 'Application under review'
+            : 'Account not active'}
+        </h1>
+        <p className="text-gray-500">
+          {carrier?.application_status === 'pending'
+            ? "Your carrier application is pending approval. You'll be able to quote on jobs once an admin reviews and approves your profile. This typically takes less than 24 hours."
+            : 'Your carrier account is not currently active. Please contact support if you believe this is an error.'}
+        </p>
+      </div>
+    )
+  }
 
   const walletBalance = carrier?.wallet_balance ?? 0
 

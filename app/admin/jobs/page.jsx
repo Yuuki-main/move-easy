@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service-role'
 import Link from 'next/link'
 
 const STATUS_STYLES = {
@@ -10,17 +10,11 @@ const STATUS_STYLES = {
 }
 
 export default async function AdminJobsPage() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: jobs } = await supabase
     .from('jobs')
-    .select(
-      `
-      *,
-      profiles!customer_id (first_name),
-      quotes (count)
-    `,
-    )
+    .select('*, quotes (count)')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -32,7 +26,6 @@ export default async function AdminJobsPage() {
       <h1 className="text-xl font-bold mb-2">All Jobs</h1>
       <p className="text-sm text-gray-400 mb-8">Every job posted on the platform.</p>
 
-      {/* Stats row */}
       <div className="grid grid-cols-5 gap-3 mb-8">
         {[
           { label: 'Total', count: total, style: 'bg-gray-50 text-gray-700' },
@@ -56,24 +49,11 @@ export default async function AdminJobsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Type
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Route
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Customer
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Quotes
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Date
-                  </th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Route</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Quotes</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
@@ -93,18 +73,11 @@ export default async function AdminJobsPage() {
                       <td className="px-5 py-3.5 text-gray-700 max-w-[200px] truncate">
                         {pickupCity} → {deliveryCity}
                       </td>
-                      <td className="px-5 py-3.5 text-gray-700">
-                        {job.profiles?.first_name ?? '—'}
-                      </td>
                       <td className="px-5 py-3.5 text-gray-700 font-medium">
                         {quoteCount}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${
-                            STATUS_STYLES[job.status] ?? 'bg-gray-100 text-gray-500'
-                          }`}
-                        >
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[job.status] ?? 'bg-gray-100 text-gray-500'}`}>
                           {job.status}
                         </span>
                       </td>
@@ -116,10 +89,7 @@ export default async function AdminJobsPage() {
                         })}
                       </td>
                       <td className="px-5 py-3.5">
-                        <Link
-                          href={`/dashboard/jobs/${job.id}`}
-                          className="text-xs text-gray-400 hover:text-gray-700"
-                        >
+                        <Link href={`/dashboard/jobs/${job.id}`} className="text-xs text-gray-400 hover:text-gray-700">
                           View →
                         </Link>
                       </td>
