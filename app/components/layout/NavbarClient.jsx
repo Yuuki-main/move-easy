@@ -473,6 +473,7 @@ export default function NavbarClient({
                 <Link
                   href="/"
                   onClick={() => setMobileOpen(false)}
+                  prefetch={false}
                   className="flex items-center gap-2"
                 >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-900">
@@ -502,6 +503,7 @@ export default function NavbarClient({
                     <Link
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="flex items-center px-4 py-3 text-base font-medium text-slate-700 rounded-xl hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
                     >
                       {link.label}
@@ -543,6 +545,7 @@ export default function NavbarClient({
                             key={href}
                             href={href}
                             onClick={() => setMobileOpen(false)}
+                            prefetch={false}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 rounded-xl hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
                           >
                             <Icon size={14} className="text-zinc-400" />
@@ -574,6 +577,7 @@ export default function NavbarClient({
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="block w-full py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 rounded-lg px-4"
                     >
                       Dashboard
@@ -581,6 +585,7 @@ export default function NavbarClient({
                     <Link
                       href="/dashboard/account"
                       onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="block w-full py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 rounded-lg px-4"
                     >
                       Account
@@ -600,6 +605,7 @@ export default function NavbarClient({
                     <Link
                       href="/login"
                       onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="block w-full py-2.5 text-sm font-medium text-center text-zinc-700 border border-zinc-200 rounded-lg hover:bg-zinc-50"
                     >
                       Login
@@ -607,6 +613,7 @@ export default function NavbarClient({
                     <Link
                       href="/register"
                       onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="block w-full py-2.5 text-sm font-semibold text-center text-white bg-zinc-900 rounded-lg hover:bg-black"
                     >
                       Register
