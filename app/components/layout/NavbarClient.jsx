@@ -81,7 +81,7 @@ export default function NavbarClient({
   firstName,
   role,
   unreadCount,
-  notifications = [],
+  notifications,
   isAdmin,
 }) {
   const isCarrier = role === 'carrier'

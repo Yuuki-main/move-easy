@@ -9,7 +9,15 @@ export default async function Navbar() {
   } = await supabase.auth.getSession()
 
   if (!session) {
-    return <NavbarClient user={null} firstName={null} role={null} unreadCount={0} />
+    return (
+      <NavbarClient
+        user={null}
+        firstName={null}
+        role={null}
+        unreadCount={0}
+        notifications={[]}
+      />
+    )
   }
 
   const user = session.user
