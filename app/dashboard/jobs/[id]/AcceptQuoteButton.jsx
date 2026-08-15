@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function AcceptQuoteButton({ quoteId, jobId, variant = 'default' }) {
   const [loading, setLoading] = useState(false)
@@ -18,6 +19,9 @@ export default function AcceptQuoteButton({ quoteId, jobId, variant = 'default' 
       alert(data.error)
       setLoading(false)
       return
+    }
+    if (data.chatCreated === false) {
+      toast.error('Booking confirmed, but chat could not be created. Please try again later.')
     }
     router.refresh()
   }

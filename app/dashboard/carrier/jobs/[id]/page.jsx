@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import QuoteForm from './QuoteForm'
-import MessageThread from '@/components/MessageThread'
+import ChatPanel from '@/components/ChatPanel'
 
 const mask = (value) => (value ? '••••••••' : '••••••••')
 const maskPhone = (phone) =>
@@ -72,6 +72,26 @@ export default async function CarrierJobDetailPage({ params }) {
     .eq('job_id', id)
     .eq('carrier_id', user.id)
     .single()
+
+  // Fetch conversation if quote was accepted
+  let conversationId = null
+  if (existingQuote?.status === 'accepted') {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('job_id', id)
+      .eq('carrier_id', user.id)
+      .maybeSingle()
+
+    if (booking) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('booking_id', booking.id)
+        .maybeSingle()
+      conversationId = conv?.id ?? null
+    }
+  }
 
   if (!job) {
     return <p className="text-center py-20 text-gray-400">Job not found.</p>
@@ -212,18 +232,23 @@ export default async function CarrierJobDetailPage({ params }) {
         </div>
       )}
 
-      <QuoteForm
-        jobId={job.id}
-        existingQuote={existingQuote}
-        walletBalance={walletBalance}
-      />
+      {job.status === 'booked' && existingQuote?.status !== 'accepted' ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500">
+          This job has already been booked with another carrier.
+        </div>
+      ) : job.status !== 'booked' ? (
+        <QuoteForm
+          jobId={job.id}
+          existingQuote={existingQuote}
+          walletBalance={walletBalance}
+        />
+      ) : null}
 
-      {existingQuote?.status === 'accepted' && (
+      {existingQuote?.status === 'accepted' && conversationId && (
         <div className="mt-6">
-          <MessageThread
-            jobId={job.id}
+          <ChatPanel
+            conversationId={conversationId}
             currentUserId={user.id}
-            receiverId={job.customer_id}
           />
         </div>
       )}

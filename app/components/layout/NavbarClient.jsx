@@ -17,6 +17,8 @@ import {
   Settings,
   LayoutDashboard,
   Lock,
+  MessageSquare,
+  PackageCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -74,15 +76,56 @@ function getNavLinks(role) {
   ]
 }
 
-export default function NavbarClient({ user, firstName, role, unreadCount, isAdmin }) {
+export default function NavbarClient({
+  user,
+  firstName,
+  role,
+  unreadCount,
+  notifications = [],
+  isAdmin,
+}) {
   const isCarrier = role === 'carrier'
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [resourcesOpen, setResourcesOpen] = useState(false)
   const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false)
+  const [propsSnapshot, setPropsSnapshot] = useState({ unreadCount, notifications })
+  const [localUnreadCount, setLocalUnreadCount] = useState(unreadCount)
+  const [localNotifications, setLocalNotifications] = useState(notifications)
   const avatarRef = useRef(null)
   const resourcesRef = useRef(null)
+
+  if (propsSnapshot.unreadCount !== unreadCount || propsSnapshot.notifications !== notifications) {
+    setPropsSnapshot({ unreadCount, notifications })
+    setLocalUnreadCount(unreadCount)
+    setLocalNotifications(notifications)
+  }
+
+  function openAvatarMenu() {
+    setAvatarOpen((v) => !v)
+  }
+
+  function handleNotificationClick(n) {
+    setAvatarOpen(false)
+    // Optimistically clear this notification from the badge
+    setLocalNotifications((prev) => prev.filter((x) => x.id !== n.id))
+    setLocalUnreadCount((c) => Math.max(0, c - 1))
+
+    if (n.kind === 'chat') {
+      fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationIds: [n.id] }),
+      }).catch(() => {})
+    } else {
+      fetch('/api/bookings/mark-viewed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingIds: [n.id] }),
+      }).catch(() => {})
+    }
+  }
 
   const navLinks = getNavLinks(role)
   const initial = firstName ? firstName.charAt(0).toUpperCase() : '?'
@@ -213,12 +256,12 @@ export default function NavbarClient({ user, firstName, role, unreadCount, isAdm
               {user ? (
                 <div ref={avatarRef} className="relative">
                   <button
-                    onClick={() => setAvatarOpen((v) => !v)}
+                    onClick={openAvatarMenu}
                     className="relative flex items-center gap-3 px-4 h-10 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors"
                   >
-                    {unreadCount > 0 && (
+                    {localUnreadCount > 0 && (
                       <span className="absolute -top-2 -left-2 flex items-center justify-center w-6 h-6 rounded-full bg-pink-600 text-white text-xs font-bold">
-                        {unreadCount > 9 ? '9+' : unreadCount}
+                        {localUnreadCount > 9 ? '9+' : localUnreadCount}
                       </span>
                     )}
                     <span className="text-sm font-medium text-zinc-900">
@@ -233,7 +276,9 @@ export default function NavbarClient({ user, firstName, role, unreadCount, isAdm
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 8 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-zinc-100 py-2 z-50"
+                        className={`absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-zinc-100 py-2 z-50 ${
+                          localNotifications.length > 0 ? 'w-80' : 'w-48'
+                        }`}
                       >
                         <div className="px-4 py-2 border-b border-zinc-100">
                           <p className="text-sm font-semibold text-zinc-900">
@@ -243,6 +288,65 @@ export default function NavbarClient({ user, firstName, role, unreadCount, isAdm
                             {role || 'customer'}
                           </p>
                         </div>
+
+                        {localNotifications.length > 0 && (
+                          <div className="border-b border-zinc-100 py-1">
+                            {localNotifications.map((n) => {
+                              const href = n.jobId
+                                ? n.kind === 'chat' && !isCarrier
+                                  ? `/dashboard/jobs/${n.jobId}`
+                                  : `/dashboard/carrier/jobs/${n.jobId}`
+                                : isCarrier
+                                  ? '/dashboard/carrier/jobs'
+                                  : '/dashboard/jobs'
+
+                              return (
+                                <Link
+                                  key={`${n.kind}-${n.id}`}
+                                  href={href}
+                                  onClick={() => handleNotificationClick(n)}
+                                  className="flex items-start gap-3 px-4 py-2.5 hover:bg-zinc-50 transition-colors"
+                                >
+                                  {n.kind === 'chat' ? (
+                                    <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-blue-100">
+                                      <MessageSquare size={14} className="text-blue-700" />
+                                    </span>
+                                  ) : (
+                                    <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-green-100">
+                                      <PackageCheck size={14} className="text-green-700" />
+                                    </span>
+                                  )}
+                                  <div className="min-w-0">
+                                    {n.kind === 'chat' ? (
+                                      <>
+                                        <p className="text-sm font-medium text-zinc-900">
+                                          New message
+                                        </p>
+                                        <p className="text-xs text-zinc-500 truncate">
+                                          {n.content}
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <p className="text-sm font-medium text-zinc-900">
+                                          Quote accepted{n.type ? ` — ${n.type.replace(/_/g, ' ')}` : ''}
+                                        </p>
+                                        <p className="text-xs text-zinc-500 truncate">
+                                          {n.pickup?.split(',')[0]} → {n.delivery?.split(',')[0]}
+                                        </p>
+                                        {n.price != null && (
+                                          <p className="text-xs text-green-600 font-semibold mt-0.5">
+                                            ${Number(n.price).toLocaleString('en-NZ')}
+                                          </p>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        )}
 
                         <Link
                           href={

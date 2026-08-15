@@ -51,6 +51,24 @@ export async function POST(req) {
     )
   }
 
+  // Job must still be open for quoting
+  const { data: job, error: jobFetchError } = await supabase
+    .from('jobs')
+    .select('id, status')
+    .eq('id', jobId)
+    .single()
+
+  if (jobFetchError || !job) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+  }
+
+  if (!['open', 'quoted'].includes(job.status)) {
+    return NextResponse.json(
+      { error: 'This job is no longer accepting quotes' },
+      { status: 409 },
+    )
+  }
+
   // Prevent duplicate quotes
   const { data: existing } = await supabase
     .from('quotes')

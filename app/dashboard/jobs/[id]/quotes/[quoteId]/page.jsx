@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import AcceptQuoteButton from '../../AcceptQuoteButton'
-import MessageThread from '@/components/MessageThread'
+import ChatPanel from '@/components/ChatPanel'
 import CarrierDescriptionCard from './CarrierDescriptionCard'
 
 export default async function QuoteDetailPage({ params }) {
@@ -66,6 +66,26 @@ export default async function QuoteDetailPage({ params }) {
       .eq('carrier_id', quote.carrier_id)
       .eq('status', 'pending'),
   ])
+
+  // Fetch conversation if quote was accepted
+  let conversationId = null
+  if (quote.status === 'accepted') {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('quote_id', quoteId)
+      .maybeSingle()
+
+    if (booking) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('booking_id', booking.id)
+        .maybeSingle()
+      conversationId = conv?.id ?? null
+    }
+  }
 
   const recentReview = recentReviews?.[0] ?? null
   const avgRating =
@@ -346,13 +366,16 @@ export default async function QuoteDetailPage({ params }) {
             )}
           </div>
 
-          {/* Message thread */}
-          <div className="border-t border-gray-100 my-5" />
-          <MessageThread
-            jobId={jobId}
-            currentUserId={user.id}
-            receiverId={quote.carrier_id}
-          />
+          {/* Chat panel */}
+          {conversationId && (
+            <>
+              <div className="border-t border-gray-100 my-5" />
+              <ChatPanel
+                conversationId={conversationId}
+                currentUserId={user.id}
+              />
+            </>
+          )}
 
           {/* Recent review */}
           {recentReview && (

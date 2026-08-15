@@ -17,9 +17,9 @@ export async function POST(req) {
   const { quoteId, jobId } = await req.json()
 
   // Verify job belongs to this customer — also fetch job details for email
-  const { data: job } = await supabase
+  const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('id, customer_id, status, pickup_address, delivery_address, move_date, type')
+    .select('id, customer_id, status, pickup_address, delivery_address, move_date_type, move_date_from, move_date_to, type')
     .eq('id', jobId)
     .single()
 
@@ -53,7 +53,14 @@ export async function POST(req) {
     .neq('id', quoteId)
 
   // 3. Update job status to booked
-  await supabase.from('jobs').update({ status: 'booked' }).eq('id', jobId)
+  const { error: jobUpdateError } = await supabase
+    .from('jobs')
+    .update({ status: 'booked' })
+    .eq('id', jobId)
+
+  if (jobUpdateError) {
+    return NextResponse.json({ error: jobUpdateError.message }, { status: 500 })
+  }
 
   // 4. Create booking record
   const { data: booking, error: bookingError } = await supabase
@@ -70,6 +77,31 @@ export async function POST(req) {
 
   if (bookingError) {
     return NextResponse.json({ error: bookingError.message }, { status: 500 })
+  }
+
+  // 4.5 — Auto-create conversation for the confirmed booking
+  let chatCreated = true
+  try {
+    const { error: convError } = await supabaseAdmin
+      .from('conversations')
+      .insert({
+        booking_id: booking.id,
+        customer_id: user.id,
+        carrier_id: acceptedQuote.carrier_id,
+      })
+
+    if (convError) {
+      // 23505 = unique violation — conversation already exists, not a real error
+      if (convError.code === '23505') {
+        console.log('[quotes/accept] Conversation already exists for booking:', booking.id)
+      } else {
+        chatCreated = false
+        console.error('[quotes/accept] Conversation creation failed:', convError)
+      }
+    }
+  } catch (convErr) {
+    chatCreated = false
+    console.error('[quotes/accept] Conversation creation threw:', convErr)
   }
 
   // 5. Deduct 18% platform fee from carrier wallet
@@ -110,8 +142,8 @@ export async function POST(req) {
   const customerName =
     customer?.user_metadata?.first_name || customer?.email?.split('@')[0] || 'Customer'
   const jobType = job.type?.replace(/_/g, ' ') || 'move'
-  const moveDate = job.move_date
-    ? new Date(job.move_date).toLocaleDateString('en-NZ', {
+  const moveDate = job.move_date_from
+    ? new Date(job.move_date_from).toLocaleDateString('en-NZ', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -119,9 +151,10 @@ export async function POST(req) {
       })
     : null
 
-  await sendEmail({
-    to: carrier.email,
-    subject: '🎉 Your quote was accepted!',
+  try {
+    await sendEmail({
+      to: carrier.email,
+      subject: '🎉 Your quote was accepted!',
     html: `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1f2937">
         <h2 style="color:#111827;font-size:22px;margin:0 0 8px">🎉 Quote accepted!</h2>
@@ -176,9 +209,13 @@ export async function POST(req) {
         </p>
       </div>
     `,
-  })
+    })
+  } catch (emailErr) {
+    console.error('[quotes/accept] Email notification failed:', emailErr)
+  }
 
   return NextResponse.json({
     bookingId: booking.id,
+    chatCreated,
   })
 }

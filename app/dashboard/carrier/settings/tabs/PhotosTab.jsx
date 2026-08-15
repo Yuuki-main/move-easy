@@ -2,7 +2,14 @@
 
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { Upload, X, ChevronLeft, ChevronRight, Star, ImageIcon } from 'lucide-react'
+import {
+  Upload,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  ImageIcon,
+} from 'lucide-react'
 
 export default function PhotosTab({ carrierId, photos: initial }) {
   const [photos, setPhotos] = useState(initial ?? [])
@@ -80,7 +87,10 @@ export default function PhotosTab({ carrierId, photos: initial }) {
     const newIndex = index + direction
     if (newIndex < 0 || newIndex >= photos.length) return
     const reordered = [...photos]
-    ;[reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]]
+    ;[reordered[index], reordered[newIndex]] = [
+      reordered[newIndex],
+      reordered[index],
+    ]
     setPhotos(reordered)
 
     // Persist reorder

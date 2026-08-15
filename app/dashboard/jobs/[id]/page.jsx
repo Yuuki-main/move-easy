@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Calendar, Users } from 'lucide-react'
-import MessageThread from '@/components/MessageThread'
+import ChatPanel from '@/components/ChatPanel'
 import ReviewForm from '@/components/ReviewForm'
 import QuotesSection from './QuotesSection'
 import CancelJobButton from './CancelJobButton'
@@ -64,6 +64,17 @@ export default async function CustomerJobDetailPage({ params }) {
     .select('*')
     .eq('job_id', job.id)
     .maybeSingle()
+
+  // Fetch conversation if booking exists
+  let conversationId = null
+  if (booking) {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('booking_id', booking.id)
+      .maybeSingle()
+    conversationId = conv?.id ?? null
+  }
 
   // Check if a review already exists for this booking
   const { data: existingReview } = booking
@@ -379,13 +390,12 @@ export default async function CustomerJobDetailPage({ params }) {
         </div>
       </div>
 
-      {/* Message thread — only shown after a quote is accepted */}
-      {acceptedQuote && (
+      {/* Chat panel — only shown after a quote is accepted */}
+      {acceptedQuote && conversationId && (
         <div className="mt-6">
-          <MessageThread
-            jobId={job.id}
+          <ChatPanel
+            conversationId={conversationId}
             currentUserId={user.id}
-            receiverId={acceptedQuote.carrier_id}
           />
         </div>
       )}

@@ -3,9 +3,15 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 const STATUS_STYLES = {
-  confirmed: 'bg-yellow-100 text-yellow-700',
-  completed: 'bg-green-100 text-green-700',
+  confirmed: 'bg-green-100 text-green-700',
+  completed: 'bg-blue-100 text-blue-700',
   cancelled: 'bg-gray-100 text-gray-400',
+}
+
+const STATUS_LABELS = {
+  confirmed: 'On-going',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 }
 
 export default async function CarrierBookingsPage() {
@@ -32,6 +38,11 @@ export default async function CarrierBookingsPage() {
 
   if (bookingsError) {
     console.error('[CarrierBookingsPage] Supabase error:', bookingsError)
+  }
+
+  const unseenIds = bookings?.filter((b) => !b.viewed_by_carrier).map((b) => b.id) ?? []
+  if (unseenIds.length > 0) {
+    await supabase.from('bookings').update({ viewed_by_carrier: true }).in('id', unseenIds)
   }
 
   const confirmed = bookings?.filter((b) => b.status === 'confirmed') ?? []
@@ -87,7 +98,9 @@ export default async function CarrierBookingsPage() {
             return (
               <div
                 key={booking.id}
-                className="bg-white rounded-xl border border-gray-200 p-5"
+                className={`bg-white rounded-xl border p-5 ${
+                  booking.status === 'confirmed' ? 'border-green-400' : 'border-gray-200'
+                }`}
               >
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-2">
@@ -99,7 +112,7 @@ export default async function CarrierBookingsPage() {
                         STATUS_STYLES[booking.status] ?? 'bg-gray-100 text-gray-500'
                       }`}
                     >
-                      {booking.status}
+                      {STATUS_LABELS[booking.status] ?? booking.status}
                     </span>
                   </div>
                   <Link

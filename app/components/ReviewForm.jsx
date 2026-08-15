@@ -47,7 +47,7 @@ export default function ReviewForm({ bookingId, jobId, carrierId }) {
           max={10}
           value={rating}
           onChange={(e) => setRating(Number(e.target.value))}
-          className="w-full"
+          className="w-full accent-black"
         />
       </div>
       <textarea
@@ -60,7 +60,7 @@ export default function ReviewForm({ bookingId, jobId, carrierId }) {
       <button
         onClick={submit}
         disabled={loading}
-        className="mt-4 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        className="mt-4 w-full rounded-xl bg-[#000] py-3 font-semibold text-white cursor-pointer disabled:opacity-50 transition-colors"
       >
         {loading ? 'Submitting...' : 'Submit Review'}
       </button>
