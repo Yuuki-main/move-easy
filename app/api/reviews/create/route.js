@@ -1,63 +1,85 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { serverError } from '@/lib/api-errors'
+import { notify } from '@/lib/notifications'
 
+// POST /api/reviews/create { bookingId, rating, comment }
+// Only the booking's customer, only once the work is completed, only once.
+// Everything else (job, carrier) is taken from the booking — never the client.
 export async function POST(req) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user)
-    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-  const { bookingId, jobId, carrierId, rating, comment } = await req.json()
+  const body = await req.json().catch(() => ({}))
+  const rating = Number(body.rating)
+  const comment = String(body.comment ?? '').trim().slice(0, 2000) || null
 
-  if (!rating || rating < 1 || rating > 10)
-    return NextResponse.json({ error: 'Rating must be 1-10' }, { status: 400 })
+  if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
+    return NextResponse.json({ error: 'Rating must be between 1 and 10' }, { status: 400 })
+  }
 
-  // Prevent duplicate reviews
-  const { data: existing } = await supabase
-    .from('reviews')
-    .select('id')
-    .eq('booking_id', bookingId)
+  const { data: booking } = await supabaseAdmin
+    .from('bookings')
+    .select('id, job_id, customer_id, carrier_id, status')
+    .eq('id', body.bookingId)
     .maybeSingle()
 
-  if (existing)
-    return NextResponse.json({ error: 'Already reviewed' }, { status: 409 })
+  if (!booking || booking.customer_id !== user.id) {
+    return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+  }
+  if (booking.status !== 'completed') {
+    return NextResponse.json(
+      { error: 'You can leave a review once the move is marked complete' },
+      { status: 409 },
+    )
+  }
 
-  const { data: review, error } = await supabase
+  const { data: review, error } = await supabaseAdmin
     .from('reviews')
     .insert({
-      booking_id: bookingId,
-      job_id: jobId,
+      booking_id: booking.id,
+      job_id: booking.job_id,
       customer_id: user.id,
-      carrier_id: carrierId,
+      carrier_id: booking.carrier_id,
       rating,
       comment,
     })
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '23505') {
+      return NextResponse.json({ error: 'You have already reviewed this move' }, { status: 409 })
+    }
+    return serverError('reviews/create', error)
+  }
 
-  // Recalculate carrier's average rating
-  const { data: allReviews } = await supabase
+  // Recalculate the carrier's rating from all their reviews
+  const { data: allReviews } = await supabaseAdmin
     .from('reviews')
     .select('rating')
-    .eq('carrier_id', carrierId)
+    .eq('carrier_id', booking.carrier_id)
 
-  const total = allReviews.length
-  const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / total
+  const total = allReviews?.length ?? 0
+  const avg = total ? allReviews.reduce((sum, r) => sum + r.rating, 0) / total : 0
 
-  await supabase
+  const { error: ratingError } = await supabaseAdmin
     .from('carrier_profiles')
-    .update({ total_reviews: total, average_rating: avg.toFixed(2) })
-    .eq('id', carrierId)
+    .update({ total_reviews: total, average_rating: Number(avg.toFixed(2)) })
+    .eq('id', booking.carrier_id)
+  if (ratingError) console.error('[reviews/create] rating update failed:', ratingError.message)
 
-  // Mark booking as completed
-  await supabase
-    .from('bookings')
-    .update({ status: 'completed' })
-    .eq('id', bookingId)
+  await notify(booking.carrier_id, {
+    type: 'new_review',
+    title: `New review: ${rating}/10`,
+    content: comment,
+    link: `/carrier/${booking.carrier_id}`,
+    jobId: booking.job_id,
+  })
 
   return NextResponse.json({ review })
 }

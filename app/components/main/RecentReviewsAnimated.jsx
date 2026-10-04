@@ -23,16 +23,8 @@ export default function RecentReviewsAnimated({ reviews }) {
       viewport={{ once: true }}
     >
       {reviews.map((r) => {
-        const daysAgo = Math.floor(
-          (Date.now() - new Date(r.created_at).getTime()) /
-            (1000 * 60 * 60 * 24),
-        )
-        const timeAgo =
-          daysAgo === 0
-            ? 'Today'
-            : daysAgo === 1
-              ? 'Yesterday'
-              : `${daysAgo} days ago`
+        // Computed on the server so it's stable between server and client renders
+        const timeAgo = r.timeAgo
 
         return (
         <motion.div

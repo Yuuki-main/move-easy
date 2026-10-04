@@ -58,24 +58,17 @@ export function useRoute(
   // Effect — fetch when locations change
   // -----------------------------------------------------------------------
 
-  useEffect(() => {
-    // Bail early if either location is missing or invalid
-    if (!pickup || !delivery) {
-      setRoute(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+  const hasValidLocations = Boolean(
+    pickup &&
+      delivery &&
+      isValidLatLng({ lat: pickup.latitude, lng: pickup.longitude }) &&
+      isValidLatLng({ lat: delivery.latitude, lng: delivery.longitude }),
+  )
 
-    if (
-      !isValidLatLng({ lat: pickup.latitude, lng: pickup.longitude }) ||
-      !isValidLatLng({ lat: delivery.latitude, lng: delivery.longitude })
-    ) {
-      setRoute(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+  useEffect(() => {
+    // Nothing to fetch; the hook returns an empty result below instead of
+    // resetting state here (avoids a cascading re-render).
+    if (!hasValidLocations) return
 
     // Abort any in-flight request
     abortRef.current?.abort()
@@ -124,6 +117,7 @@ export function useRoute(
       controller.abort()
     }
   }, [
+    hasValidLocations,
     pickup?.latitude,
     pickup?.longitude,
     delivery?.latitude,
@@ -132,5 +126,6 @@ export function useRoute(
     apiUrl,
   ])
 
+  if (!hasValidLocations) return { route: null, loading: false, error: null }
   return { route, loading, error }
 }

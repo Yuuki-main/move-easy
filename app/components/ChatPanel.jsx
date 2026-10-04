@@ -61,6 +61,18 @@ export default function ChatPanel({ conversationId, currentUserId }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Seeing the chat = reading it: mark the other person's messages read and
+  // clear their chat notifications (on open, and whenever a new one arrives).
+  const lastIncomingId = [...messages].reverse().find((m) => m.sender_id !== currentUserId)?.id
+  useEffect(() => {
+    if (loading) return
+    fetch('/api/chat/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversationId }),
+    }).catch(() => {})
+  }, [conversationId, lastIncomingId, loading])
+
   const send = async () => {
     const body = text.trim()
     if (!body) return
@@ -77,6 +89,13 @@ export default function ChatPanel({ conversationId, currentUserId }) {
     if (error) {
       toast.error('Failed to send message')
       setText(body) // restore text on failure
+    } else {
+      // Email the other person if they're not mid-conversation (server decides)
+      fetch('/api/chat/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId }),
+      }).catch(() => {})
     }
 
     setSending(false)

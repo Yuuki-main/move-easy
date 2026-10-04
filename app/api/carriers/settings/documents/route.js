@@ -2,7 +2,10 @@ export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToS3 } from '@/lib/uploadToS3'
+import { uploadToS3, UploadError } from '@/lib/uploadToS3'
+import { serverError } from '@/lib/api-errors'
+
+const DOCUMENT_TYPES = ['proof_of_address', 'driving_license', 'identity', 'other']
 
 export async function POST(req) {
   try {
@@ -16,14 +19,20 @@ export async function POST(req) {
     const file = formData.get('file')
     const document_type = formData.get('document_type') ?? 'other'
 
-    if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    if (!file || typeof file === 'string') {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+    if (!DOCUMENT_TYPES.includes(document_type)) {
+      return NextResponse.json({ error: 'Invalid document type' }, { status: 400 })
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer())
+    // ID / insurance documents are private: no public URL, served via /api/files
     const { key, url } = await uploadToS3({
       buffer,
-      fileName: file.name,
-      mimeType: file.type,
-      folder: 'carrier-documents',
+      folder: `carrier-documents/${user.id}`,
+      allowPdf: true,
+      isPrivate: true,
     })
 
     const { data, error } = await supabase
@@ -38,13 +47,13 @@ export async function POST(req) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError('carriers/settings/documents', error)
     return NextResponse.json({ data })
   } catch (err) {
+    if (err instanceof UploadError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
+    }
     console.error('[documents:POST]', err)
-    return NextResponse.json(
-      { error: err.message || 'Upload failed' },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }

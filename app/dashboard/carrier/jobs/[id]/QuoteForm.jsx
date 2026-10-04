@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { PLATFORM_FEE_RATE } from '@/lib/quotes'
 
 export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
   const [price, setPrice] = useState(existingQuote?.price || '')
@@ -14,7 +15,7 @@ export default function QuoteForm({ jobId, existingQuote, walletBalance }) {
 
   const platformFee = useMemo(() => {
     if (!price || Number(price) <= 0) return 0
-    return Number(price) * 0.18
+    return Number(price) * PLATFORM_FEE_RATE
   }, [price])
 
   // Minimum $1 wallet balance required to submit a quote

@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import ReviewButton from './ReviewButton'
 import ApprovalButtons from '../ApprovalButtons'
+import { privateFileUrl } from '@/lib/upload-rules'
+import { loadChecklist } from '@/lib/carrier-profile'
+import RemindButton from './RemindButton'
 
 export default async function CarrierDetailPage({ params }) {
   const { id } = await params
@@ -66,6 +69,7 @@ export default async function CarrierDetailPage({ params }) {
 
   // Parse photos array from carrier_profiles
   const photos = Array.isArray(carrier.photos) ? carrier.photos : []
+  const checklist = await loadChecklist(carrier.id)
 
   return (
     <div>
@@ -134,6 +138,29 @@ export default async function CarrierDetailPage({ params }) {
         </div>
       </div>
 
+      {/* Profile completeness — what the carrier still needs before quoting */}
+      <div
+        className={`rounded-xl border p-5 mb-6 ${
+          checklist.complete ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-gray-900">
+            {checklist.complete
+              ? '✓ Profile complete — can quote once approved'
+              : `Profile incomplete (${checklist.doneCount}/${checklist.items.length}) — cannot quote yet`}
+          </h2>
+          {!checklist.complete && <RemindButton carrierId={carrier.id} />}
+        </div>
+        {!checklist.complete && (
+          <ul className="mt-2 list-disc pl-5 text-sm text-amber-900">
+            {checklist.missing.map((m) => (
+              <li key={m.key}>{m.label}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Photos section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">
@@ -180,7 +207,7 @@ export default async function CarrierDetailPage({ params }) {
                   </p>
                   <div className="flex items-center gap-3 mt-0.5">
                     <a
-                      href={doc.file_url}
+                      href={privateFileUrl(doc.file_key) ?? doc.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-blue-600 hover:underline"
@@ -243,9 +270,9 @@ export default async function CarrierDetailPage({ params }) {
                         ${Number(ins.coverage_amount).toLocaleString()}
                       </span>
                     )}
-                    {ins.proof_url && (
+                    {(ins.proof_key || ins.proof_url) && (
                       <a
-                        href={ins.proof_url}
+                        href={privateFileUrl(ins.proof_key) ?? ins.proof_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:underline"

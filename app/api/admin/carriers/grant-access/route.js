@@ -3,6 +3,9 @@ import { cookies } from 'next/headers'
 import { verifyAdminToken, COOKIE_NAME } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase/service-role'
 import { sendEmail } from '@/lib/email'
+import { carrierApproved } from '@/lib/email-templates'
+import { loadChecklist } from '@/lib/carrier-profile'
+import { serverError } from '@/lib/api-errors'
 
 export async function POST(req) {
   const cookieStore = await cookies()
@@ -43,7 +46,7 @@ export async function POST(req) {
       .eq('id', carrierId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError('admin/carriers/grant-access', error)
     }
 
     // Send email notification
@@ -51,24 +54,10 @@ export async function POST(req) {
       try {
         await sendEmail({
           to: email,
-          subject: 'Your carrier account has been approved!',
-          html: `
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-              <h2 style="color: #16a34a;">✅ Account Approved</h2>
-              <p>Hi ${carrier.public_name || 'there'},</p>
-              <p>Your carrier application for <strong>Moving Easy</strong> has been approved!</p>
-              <p>You can now log in and start accepting jobs:</p>
-              <p>
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/login"
-                   style="display: inline-block; background: #2563eb; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                  Go to Dashboard
-                </a>
-              </p>
-              <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
-                — The Moving Easy Team
-              </p>
-            </div>
-          `,
+          ...carrierApproved({
+            name: carrier.public_name,
+            missingSteps: (await loadChecklist(carrierId)).missing.map((i) => i.label),
+          }),
         })
       } catch (emailErr) {
         console.error('[grant-access] Email failed:', emailErr)
@@ -77,9 +66,6 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message || 'Internal error' },
-      { status: 500 },
-    )
+    return serverError('admin/carriers/grant-access', err)
   }
 }

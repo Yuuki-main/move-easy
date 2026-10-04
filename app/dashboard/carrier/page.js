@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import QuickActions from './QuickActions'
+import ProfileChecklist from '@/components/ProfileChecklist'
+import { loadChecklist } from '@/lib/carrier-profile'
 
 export default async function CarrierDashboardPage() {
   const supabase = await createClient()
@@ -26,6 +28,8 @@ export default async function CarrierDashboardPage() {
   // Guard: customers shouldn't be here
   //   if (profile?.role === 'customer') redirect('/dashboard/customer')
   if (profile?.role === 'customer') redirect('/dashboard')
+
+  const checklist = carrier ? await loadChecklist(user.id) : null
 
   //   const carrier = profile?.carrier_profiles
 
@@ -63,6 +67,15 @@ export default async function CarrierDashboardPage() {
             </span>
           )}
         </div>
+
+        <ProfileChecklist
+          checklist={checklist}
+          intro={
+            carrier?.application_status === 'pending'
+              ? "While we review your application, finish these steps. You'll need all of them before you can quote on jobs."
+              : undefined
+          }
+        />
 
         {/* Quick actions */}
         <QuickActions />

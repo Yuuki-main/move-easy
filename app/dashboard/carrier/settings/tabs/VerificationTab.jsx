@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { Upload, FileText, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 import { DOCUMENT_TYPES } from '../schemas'
+import { ACCEPT, checkFileClient } from '@/lib/upload-rules'
 
 export default function VerificationTab({ carrierId, documents: initial }) {
   const [documents, setDocuments] = useState(initial ?? [])
@@ -14,6 +15,12 @@ export default function VerificationTab({ carrierId, documents: initial }) {
   async function handleUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    const problem = checkFileClient(file, { allowPdf: true })
+    if (problem) {
+      toast.error(problem)
+      e.target.value = ''
+      return
+    }
 
     setUploading(true)
     const formData = new FormData()
@@ -104,7 +111,7 @@ export default function VerificationTab({ carrierId, documents: initial }) {
             <input
               ref={fileRef}
               type="file"
-              accept="image/*,.pdf"
+              accept={ACCEPT.imageOrPdf}
               onChange={handleUpload}
               className="hidden"
               disabled={uploading}

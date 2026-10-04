@@ -5,6 +5,11 @@ import Image from 'next/image'
 import AcceptQuoteButton from '../../AcceptQuoteButton'
 import ChatPanel from '@/components/ChatPanel'
 import CarrierDescriptionCard from './CarrierDescriptionCard'
+import {
+  effectivePaymentTerms,
+  formatCollectionWindow,
+  isQuoteExpired,
+} from '@/lib/quotes'
 
 export default async function QuoteDetailPage({ params }) {
   const supabase = await createClient()
@@ -30,7 +35,7 @@ export default async function QuoteDetailPage({ params }) {
       .single(),
   ])
 
-  if (!quote || !job) {
+  if (!quote || !job || quote.status === 'withdrawn') {
     return <p className="text-center py-20 text-gray-400">Quote not found.</p>
   }
 
@@ -67,25 +72,14 @@ export default async function QuoteDetailPage({ params }) {
       .eq('status', 'pending'),
   ])
 
-  // Fetch conversation if quote was accepted
-  let conversationId = null
-  if (quote.status === 'accepted') {
-    const { data: booking } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('job_id', jobId)
-      .eq('quote_id', quoteId)
-      .maybeSingle()
-
-    if (booking) {
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('booking_id', booking.id)
-        .maybeSingle()
-      conversationId = conv?.id ?? null
-    }
-  }
+  // Fetch conversation — available as soon as this carrier has quoted
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('job_id', jobId)
+    .eq('carrier_id', quote.carrier_id)
+    .maybeSingle()
+  const conversationId = conv?.id ?? null
 
   const recentReview = recentReviews?.[0] ?? null
   const avgRating =
@@ -106,20 +100,14 @@ export default async function QuoteDetailPage({ params }) {
 
   const isAccepted = quote.status === 'accepted'
   const isRejected = quote.status === 'rejected'
-  const canAccept = job.status !== 'booked' && !isAccepted && !isRejected
+  const isExpired = quote.status === 'pending' && isQuoteExpired(quote)
+  const canAccept =
+    ['open', 'quoted'].includes(job.status) && quote.status === 'pending' && !isExpired
 
-  const paymentMethods = carrier?.payment_methods ?? []
-  const paymentTimeframes = carrier?.payment_timeframes ?? []
+  const { methods: paymentMethods, timeframes: paymentTimeframes } =
+    effectivePaymentTerms(quote, carrier)
   const carrierPhotos = carrier?.photos ?? []
   const carrierAvatar = carrierPhotos[0] ?? null
-
-  const moveDateDisplay = job.move_date
-    ? new Date(job.move_date).toLocaleDateString('en-NZ', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null
 
   const reviewDateDisplay = recentReview
     ? new Date(recentReview.created_at).toLocaleDateString('en-NZ', {
@@ -337,9 +325,7 @@ export default async function QuoteDetailPage({ params }) {
             <div className="flex items-start justify-between py-3 text-sm">
               <span className="text-gray-400 shrink-0 w-36">Time frame</span>
               <span className="text-gray-700 text-right">
-                {moveDateDisplay
-                  ? `${moveDateDisplay} · delivery date flexible`
-                  : 'collection date flexible · delivery date flexible'}
+                {formatCollectionWindow(quote)}
               </span>
             </div>
 
@@ -444,6 +430,14 @@ export default async function QuoteDetailPage({ params }) {
               ) : isRejected ? (
                 <div className="w-full bg-gray-50 text-gray-400 text-sm font-semibold py-3 rounded-xl text-center">
                   Not selected
+                </div>
+              ) : quote.status === 'cancelled' ? (
+                <div className="w-full bg-gray-50 text-gray-400 text-sm font-semibold py-3 rounded-xl text-center">
+                  Booking cancelled
+                </div>
+              ) : isExpired ? (
+                <div className="w-full bg-gray-50 text-gray-400 text-sm font-semibold py-3 rounded-xl text-center">
+                  This quote has expired
                 </div>
               ) : canAccept ? (
                 <>

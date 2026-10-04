@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import BookingActions from '@/components/BookingActions'
+import { PLATFORM_FEE_RATE } from '@/lib/quotes'
 
 const STATUS_STYLES = {
   confirmed: 'bg-green-100 text-green-700',
@@ -91,8 +93,8 @@ export default async function CarrierBookingsPage() {
         <div className="space-y-3">
           {bookings.map((booking) => {
             const price = Number(booking.quotes?.price ?? 0)
-            const platformFee = price * 0.18
-            const earnings = price * 0.82
+            const platformFee = Math.round(price * PLATFORM_FEE_RATE * 100) / 100
+            const earnings = price - platformFee
             const jobType = booking.jobs?.type?.replace(/_/g, ' ')
 
             return (
@@ -131,6 +133,13 @@ export default async function CarrierBookingsPage() {
                   {booking.jobs?.pickup_address} → {booking.jobs?.delivery_address}
                 </p>
 
+                {booking.status === 'cancelled' && (
+                  <p className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                    Cancelled by {booking.cancelled_by === 'carrier' ? 'you' : booking.cancelled_by === 'admin' ? 'Moving Easy support' : 'the customer'}
+                    {booking.cancellation_reason ? ` — ${booking.cancellation_reason}` : ''}
+                  </p>
+                )}
+
                 {/* Earnings breakdown */}
                 <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
                   <div>
@@ -140,7 +149,9 @@ export default async function CarrierBookingsPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Platform fee (18%)</p>
+                    <p className="text-xs text-gray-400 mb-1">
+                      Platform fee ({Math.round(PLATFORM_FEE_RATE * 100)}%)
+                    </p>
                     <p className="text-sm font-bold text-red-500">
                       −${platformFee.toLocaleString('en-NZ', { maximumFractionDigits: 2 })}
                     </p>
@@ -152,6 +163,13 @@ export default async function CarrierBookingsPage() {
                     </p>
                   </div>
                 </div>
+
+                {booking.status === 'confirmed' && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-4">
+                    <p className="text-xs text-gray-500">Done the move? Mark it complete.</p>
+                    <BookingActions bookingId={booking.id} role="carrier" size="sm" />
+                  </div>
+                )}
               </div>
             )
           })}

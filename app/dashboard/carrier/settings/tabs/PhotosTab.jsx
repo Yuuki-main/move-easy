@@ -10,6 +10,7 @@ import {
   Star,
   ImageIcon,
 } from 'lucide-react'
+import { ACCEPT, checkFileClient } from '@/lib/upload-rules'
 
 export default function PhotosTab({ carrierId, photos: initial }) {
   const [photos, setPhotos] = useState(initial ?? [])
@@ -22,6 +23,12 @@ export default function PhotosTab({ carrierId, photos: initial }) {
   async function handleUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    const problem = checkFileClient(file)
+    if (problem) {
+      toast.error(problem)
+      e.target.value = ''
+      return
+    }
 
     setUploading(true)
     const formData = new FormData()
@@ -122,7 +129,7 @@ export default function PhotosTab({ carrierId, photos: initial }) {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept={ACCEPT.image}
           onChange={handleUpload}
           className="hidden"
           disabled={uploading}

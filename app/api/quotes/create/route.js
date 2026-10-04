@@ -1,7 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { sendEmail } from '@/lib/email'
+import { trySendEmail } from '@/lib/email'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { newQuoteForCustomer } from '@/lib/email-templates'
+import { getUserContact } from '@/lib/users'
+import { notify } from '@/lib/notifications'
+import { loadChecklist } from '@/lib/carrier-profile'
+import { MAX_QUOTE_MESSAGE, parsePrice } from '@/lib/quotes'
+import { serverError } from '@/lib/api-errors'
+
+const UUID_RE = /^[0-9a-f-]{36}$/i
 
 export async function POST(req) {
   // Create Supabase SSR client
@@ -16,8 +24,21 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
   }
 
-  // Get request body
-  const { jobId, price, message } = await req.json()
+  // Get + validate request body
+  const body = await req.json().catch(() => ({}))
+  const jobId = body.jobId
+  const price = parsePrice(body.price)
+  const message = String(body.message ?? '').trim().slice(0, MAX_QUOTE_MESSAGE) || null
+
+  if (!UUID_RE.test(jobId ?? '')) {
+    return NextResponse.json({ error: 'Invalid job' }, { status: 400 })
+  }
+  if (price == null) {
+    return NextResponse.json(
+      { error: 'Enter a price between $1 and $999,999' },
+      { status: 400 },
+    )
+  }
 
   // Verify carrier exists and get wallet balance + name
   const { data: carrier, error: carrierError } = await supabase
@@ -38,6 +59,20 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Carrier not active' }, { status: 403 })
   }
 
+  // A complete profile is required to quote (ID, insurance, photo, …)
+  const checklist = await loadChecklist(user.id)
+  if (!checklist.complete) {
+    return NextResponse.json(
+      {
+        error: `Complete your profile before quoting: ${checklist.missing
+          .map((i) => i.label.toLowerCase())
+          .join('; ')}.`,
+        incompleteProfile: true,
+      },
+      { status: 403 },
+    )
+  }
+
   // Minimum $1 wallet balance required to submit any quote
   const currentBalance = carrier.wallet_balance || 0
   if (currentBalance < 1) {
@@ -54,7 +89,7 @@ export async function POST(req) {
   // Job must still be open for quoting
   const { data: job, error: jobFetchError } = await supabase
     .from('jobs')
-    .select('id, status')
+    .select('id, status, customer_id')
     .eq('id', jobId)
     .single()
 
@@ -72,49 +107,70 @@ export async function POST(req) {
   // Prevent duplicate quotes
   const { data: existing } = await supabase
     .from('quotes')
-    .select('id')
+    .select('id, status')
     .eq('job_id', jobId)
     .eq('carrier_id', user.id)
     .maybeSingle()
 
-  if (existing) {
+  if (existing && existing.status !== 'withdrawn') {
     return NextResponse.json({ error: 'Already quoted' }, { status: 409 })
   }
 
-  // Create quote
+  // Create quote — or revive the carrier's withdrawn one (one row per job+carrier)
   let quote, quoteError
   try {
-    const result = await supabase
-      .from('quotes')
-      .insert({
-        job_id: jobId,
-        carrier_id: user.id,
-        price,
-        message,
-        status: 'pending',
-      })
-      .select()
-      .single()
+    const result = existing
+      ? await supabaseAdmin
+          .from('quotes')
+          .update({
+            price,
+            message,
+            status: 'pending',
+            previous_price: null,
+            expires_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: null,
+          })
+          .eq('id', existing.id)
+          .eq('carrier_id', user.id)
+          .select()
+          .single()
+      : await supabase
+          .from('quotes')
+          .insert({
+            job_id: jobId,
+            carrier_id: user.id,
+            price,
+            message,
+            status: 'pending',
+          })
+          .select()
+          .single()
     quote = result.data
     quoteError = result.error
   } catch (err) {
     console.error('[quotes/create] Insert failed:', err)
-    return NextResponse.json(
-      {
-        error: err.message || 'Failed to create quote',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-      },
-      { status: 500 },
-    )
+    return serverError('quotes/create', err)
   }
 
   if (quoteError) {
-    return NextResponse.json({ error: quoteError.message }, { status: 500 })
+    if (quoteError.code === '23505') {
+      return NextResponse.json({ error: 'Already quoted' }, { status: 409 })
+    }
+    return serverError('quotes/create', quoteError)
   }
 
   if (!quote) {
     return NextResponse.json({ error: 'Quote created but could not be retrieved' }, { status: 500 })
   }
+
+  // Open a chat conversation between customer and carrier right away
+  await supabaseAdmin
+    .from('conversations')
+    .upsert(
+      { job_id: jobId, carrier_id: user.id, customer_id: job.customer_id },
+      { onConflict: 'job_id,carrier_id', ignoreDuplicates: true },
+    )
 
   // Update job status if still open
   await supabase
@@ -125,96 +181,37 @@ export async function POST(req) {
     .eq('id', jobId)
     .eq('status', 'open')
 
-  // Send email notification to customer (non-blocking — quote is already saved)
-  try {
-    const { data: job, error: jobError } = await supabaseAdmin
+  // Email the customer (non-blocking — the quote is already saved)
+  const [{ data: jobDetails }, customer] = await Promise.all([
+    supabaseAdmin
       .from('jobs')
-      .select('customer_id, pickup_address, delivery_address, move_date_from, type')
+      .select('id, type, pickup_address, delivery_address, move_date_from')
       .eq('id', jobId)
-      .single()
+      .single(),
+    getUserContact(job.customer_id),
+  ])
+  await notify(job.customer_id, {
+    type: 'new_quote',
+    title: `New quote: $${Number(price).toLocaleString('en-NZ')}`,
+    content: `${carrier.public_name || 'A carrier'} quoted on your ${String(jobDetails?.type ?? 'move').replace(/_/g, ' ')}`,
+    link: `/dashboard/jobs/${jobId}`,
+    jobId,
+  })
 
-    if (jobError || !job) throw new Error(`Job fetch failed: ${jobError?.message}`)
-
-    const {
-      data: { user: customer },
-    } = await supabaseAdmin.auth.admin.getUserById(job.customer_id)
-
-    if (!customer?.email) throw new Error('Customer email not found')
-
-    const customerName =
-      customer.user_metadata?.first_name || customer.email.split('@')[0] || 'Customer'
-    const carrierName = carrier.public_name || 'Your carrier'
-    const jobType = job.type?.replace(/_/g, ' ') || 'move'
-    const moveDate = job.move_date_from
-      ? new Date(job.move_date_from).toLocaleDateString('en-NZ', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
-      : null
-
-    await sendEmail({
-      to: customer.email,
-      subject: "You've received a new quote for your move",
-      html: `
-        <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1f2937">
-          <h2 style="color:#111827;font-size:22px;margin:0 0 8px">New quote received!</h2>
-          <p style="color:#6b7280;font-size:14px;margin:0 0 24px;line-height:1.5">
-            Hi ${customerName},<br/>
-            <strong>${carrierName}</strong> has submitted a quote for your ${jobType}.
-          </p>
-
-          <div style="background:#f9fafb;border-radius:12px;padding:20px;margin-bottom:24px">
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Carrier</td>
-                <td style="padding:6px 0;text-align:right;font-weight:600;color:#111827">${carrierName}</td>
-              </tr>
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Quoted price</td>
-                <td style="padding:6px 0;text-align:right;font-weight:700;font-size:18px;color:#059669">$${Number(price).toFixed(2)}</td>
-              </tr>
-              ${job.pickup_address ? `
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Pickup</td>
-                <td style="padding:6px 0;text-align:right;color:#374151">${job.pickup_address}</td>
-              </tr>` : ''}
-              ${job.delivery_address ? `
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Delivery</td>
-                <td style="padding:6px 0;text-align:right;color:#374151">${job.delivery_address}</td>
-              </tr>` : ''}
-              ${moveDate ? `
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Move date</td>
-                <td style="padding:6px 0;text-align:right;color:#374151">${moveDate}</td>
-              </tr>` : ''}
-              <tr>
-                <td style="padding:6px 0;color:#6b7280">Job reference</td>
-                <td style="padding:6px 0;text-align:right;font-family:monospace;color:#6b7280;font-size:12px">#${jobId.slice(0, 8)}</td>
-              </tr>
-            </table>
-          </div>
-
-          ${message ? `
-          <div style="background:#eff6ff;border-left:3px solid #3b82f6;border-radius:4px;padding:12px 16px;margin-bottom:24px;font-size:14px;color:#1e40af;font-style:italic">
-            "${message}"
-          </div>` : ''}
-
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/jobs/${jobId}"
-             style="background:#2563eb;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px;margin-bottom:24px">
-            View Quote →
-          </a>
-
-          <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;line-height:1.5">
-            You received this email because a carrier submitted a quote on your move request through Moving Easy.
-          </p>
-        </div>
-      `,
-    })
-  } catch (emailErr) {
-    console.error('[quotes/create] Email notification failed:', emailErr)
+  if (customer && jobDetails) {
+    await trySendEmail(
+      {
+        to: customer.email,
+        ...newQuoteForCustomer({
+          customerName: customer.firstName,
+          carrierName: carrier.public_name || 'A carrier',
+          price,
+          message,
+          job: jobDetails,
+        }),
+      },
+      'quotes/create',
+    )
   }
 
   return NextResponse.json({

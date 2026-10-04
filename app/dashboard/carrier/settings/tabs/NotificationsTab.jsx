@@ -129,10 +129,10 @@ export default function NotificationsTab({ carrierId, notifications }) {
         </div>
       </div>
 
-      {/* Updates from MovingEasy */}
+      {/* Updates from Moving Easy */}
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-3">
-          Updates from MovingEasy
+          Updates from Moving Easy
         </h3>
         <div className="flex gap-3">
           {[

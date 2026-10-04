@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { serverError } from '@/lib/api-errors'
 
 // DELETE ?key=... — remove a photo by S3 key
 export async function DELETE(req) {
@@ -27,6 +28,6 @@ export async function DELETE(req) {
     .update({ photos: updatedPhotos })
     .eq('id', user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('carriers/settings/photos/[id]', error)
   return NextResponse.json({ success: true })
 }

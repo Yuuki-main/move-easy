@@ -2,7 +2,8 @@ export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToS3 } from '@/lib/uploadToS3'
+import { uploadToS3, UploadError } from '@/lib/uploadToS3'
+import { serverError } from '@/lib/api-errors'
 
 export async function POST(req) {
   try {
@@ -15,15 +16,12 @@ export async function POST(req) {
     const formData = await req.formData()
     const file = formData.get('file')
 
-    if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    if (!file || typeof file === 'string') {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const { key, url } = await uploadToS3({
-      buffer,
-      fileName: file.name,
-      mimeType: file.type,
-      folder: 'carrier-photos',
-    })
+    const { key, url } = await uploadToS3({ buffer, folder: 'carrier-photos' })
 
     // Get current photos array
     const { data: carrier } = await supabase
@@ -40,13 +38,13 @@ export async function POST(req) {
       .update({ photos: updatedPhotos })
       .eq('id', user.id)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError('carriers/settings/photos', error)
     return NextResponse.json({ data: { url, key } })
   } catch (err) {
+    if (err instanceof UploadError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
+    }
     console.error('[photos:POST]', err)
-    return NextResponse.json(
-      { error: err.message || 'Upload failed' },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }

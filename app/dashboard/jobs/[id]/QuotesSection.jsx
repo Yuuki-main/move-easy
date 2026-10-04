@@ -3,9 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import AcceptQuoteButton from './AcceptQuoteButton'
-import PreBookingMessage from './PreBookingMessage'
+import ChatPanel from '@/components/ChatPanel'
+import {
+  effectivePaymentTerms,
+  formatCollectionWindow,
+  isQuoteExpired,
+} from '@/lib/quotes'
 
-export default function QuotesSection({ quotes, job, userId }) {
+export default function QuotesSection({ quotes, job, userId, conversationsByCarrier = {} }) {
   const [expanded, setExpanded] = useState(null)
 
   if (!quotes?.length) {
@@ -24,7 +29,12 @@ export default function QuotesSection({ quotes, job, userId }) {
         const isExpanded = expanded === quote.id
         const isAccepted = quote.status === 'accepted'
         const isRejected = quote.status === 'rejected'
-        const canAccept = job.status !== 'booked' && !isAccepted && !isRejected
+        const isCancelled = quote.status === 'cancelled'
+        const isExpired = quote.status === 'pending' && isQuoteExpired(quote)
+        // Only live quotes on a job that's still taking quotes
+        const canAccept =
+          ['open', 'quoted'].includes(job.status) && quote.status === 'pending' && !isExpired
+        const terms = effectivePaymentTerms(quote, carrier)
 
         const ratingLabel =
           recentReview?.rating >= 8
@@ -56,9 +66,21 @@ export default function QuotesSection({ quotes, job, userId }) {
                     ✓ Accepted
                   </span>
                 )}
+                {quote.electric_vehicle && (
+                  <span className="bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    EV
+                  </span>
+                )}
+                {isExpired && (
+                  <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    Expired
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
-                {isRejected ? (
+                {isCancelled ? (
+                  <span className="text-sm text-gray-400">Cancelled</span>
+                ) : isRejected ? (
                   <span className="text-sm text-gray-400">Not selected</span>
                 ) : (
                   <span className="font-bold text-gray-900 text-sm">
@@ -218,29 +240,47 @@ export default function QuotesSection({ quotes, job, userId }) {
                     <div className="flex items-start justify-between py-3">
                       <span className="text-gray-400 shrink-0 w-36">Time frame</span>
                       <span className="text-gray-700 text-right">
-                        {job.move_date
-                          ? new Date(job.move_date).toLocaleDateString('en-NZ', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : 'collection date flexible · delivery date flexible'}
+                        {formatCollectionWindow(quote)}
                       </span>
                     </div>
-                    {carrier.payment_methods?.length > 0 && (
+                    {terms.timeframes.length > 0 && (
+                      <div className="flex items-start justify-between py-3">
+                        <span className="text-gray-400 shrink-0 w-36">Payment option</span>
+                        <span className="text-gray-700 text-right">
+                          {terms.timeframes.join(' · ')}
+                        </span>
+                      </div>
+                    )}
+                    {terms.methods.length > 0 && (
                       <div className="flex items-start justify-between py-3">
                         <span className="text-gray-400 shrink-0 w-36">Payment method</span>
                         <span className="text-gray-700 text-right">
-                          {carrier.payment_methods.join(' · ')}
+                          {terms.methods.join(' · ')}
+                        </span>
+                      </div>
+                    )}
+                    {quote.expires_at && (
+                      <div className="flex items-start justify-between py-3">
+                        <span className="text-gray-400 shrink-0 w-36">Offer valid until</span>
+                        <span className={`text-right ${isExpired ? 'text-red-600' : 'text-gray-700'}`}>
+                          {new Date(quote.expires_at).toLocaleString('en-NZ', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Pre-booking message */}
-                  {job.status !== 'booked' && (
+                  {/* Chat with carrier */}
+                  {conversationsByCarrier[quote.carrier_id] && (
                     <div className="mb-6 pb-5 border-b border-gray-100">
-                      <PreBookingMessage jobId={job.id} carrierId={quote.carrier_id} />
+                      <ChatPanel
+                        conversationId={conversationsByCarrier[quote.carrier_id]}
+                        currentUserId={userId}
+                      />
                     </div>
                   )}
 

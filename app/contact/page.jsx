@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Contact Us | Moving Easy',
+  title: 'Contact Us',
   description: 'Get in touch with the Moving Easy team.',
 }
 

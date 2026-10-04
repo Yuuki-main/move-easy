@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { formatJobMoveWindow } from '@/lib/quotes'
+import ProfileChecklist from '@/components/ProfileChecklist'
+import { loadChecklist } from '@/lib/carrier-profile'
 
 export default async function CarrierJobsPage() {
   const supabase = await createClient()
@@ -32,22 +35,28 @@ export default async function CarrierJobsPage() {
     .eq('id', user.id)
     .single()
 
+  const checklist = await loadChecklist(user.id)
+
   // Carrier not approved yet
   if (carrier?.application_status !== 'active') {
     return (
-      <div className="text-center py-24">
-        <p className="text-gray-500">
+      <div className="py-10">
+        <p className="mb-6 text-center text-gray-500">
           Your account is pending approval. Check back soon.
         </p>
+        <ProfileChecklist
+          checklist={checklist}
+          intro="While we review your application, finish these steps. You'll need all of them before you can quote on jobs."
+        />
       </div>
     )
   }
 
-  // Fetch jobs matching carrier categories
+  // Jobs still taking quotes (including ones other carriers already quoted on)
   const { data: jobs } = await supabase
     .from('jobs')
     .select('*')
-    .eq('status', 'open')
+    .in('status', ['open', 'quoted'])
     .in('type', carrier.service_categories || [])
     .order('created_at', { ascending: false })
     .limit(30)
@@ -70,6 +79,11 @@ export default async function CarrierJobsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Available Jobs</h1>
+
+      <ProfileChecklist
+        checklist={checklist}
+        intro="You can browse jobs now, but you need to finish these steps before you can quote."
+      />
 
       {!jobs || jobs.length === 0 ? (
         <div className="text-center py-20">
@@ -99,21 +113,8 @@ export default async function CarrierJobsPage() {
                     Delivery: {getShortAddress(job.delivery_address)}
                   </p>
 
-                  {/* Use whichever date field exists in your schema */}
                   <p className="text-sm text-gray-400 mt-3">
-                    {job.move_date
-                      ? new Date(job.move_date).toLocaleDateString()
-                      : job.move_date_from
-                        ? `${new Date(
-                            job.move_date_from,
-                          ).toLocaleDateString()} ${
-                            job.move_date_to
-                              ? `- ${new Date(
-                                  job.move_date_to,
-                                ).toLocaleDateString()}`
-                              : ''
-                          }`
-                        : 'Flexible date'}
+                    {formatJobMoveWindow(job)}
                   </p>
 
                   <p className="text-xs text-gray-400 mt-1">

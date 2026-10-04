@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToS3 } from '@/lib/uploadToS3'
-import { sendEmail } from '@/lib/email'
+import { uploadToS3, inspectUpload, UploadError } from '@/lib/uploadToS3'
+import { sendEmailBatch } from '@/lib/email'
+import { newJobForCarrier } from '@/lib/email-templates'
+import { getUserContact } from '@/lib/users'
+import { loadChecklists } from '@/lib/carrier-profile'
+import { notifyMany } from '@/lib/notifications'
+import { MAX_JOB_PHOTOS } from '@/lib/upload-rules'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-export async function POST(req) {
-  console.log('===== API HIT: /api/jobs/create =====')
+const MAX_ITEMS = 100
+const MAX_DESCRIPTION = 2000
 
+const str = (v, max = 300) => (v == null ? null : String(v).trim().slice(0, max) || null)
+const num = (v) => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v))
+
+export async function POST(req) {
   // Create Supabase server client
   const supabase = await createClient()
 
@@ -34,100 +43,95 @@ export async function POST(req) {
     )
   }
 
-  // Get request body
-  const body = await req.json()
-
-  console.log('[DEBUG] ===== RAW BODY INSPECTION =====')
-  console.log('[DEBUG] body keys:', Object.keys(body))
-  console.log('[DEBUG] body.photos exists:', 'photos' in body)
-  console.log('[DEBUG] body.photos type:', typeof body.photos)
-  console.log('[DEBUG] body.photos isArray:', Array.isArray(body.photos))
-  console.log('[DEBUG] body.photos length:', body.photos?.length ?? 'NOT AN ARRAY')
-  if (Array.isArray(body.photos) && body.photos.length > 0) {
-    console.log('[DEBUG] body.photos[0] keys:', Object.keys(body.photos[0]))
-    console.log('[DEBUG] body.photos[0].type:', body.photos[0].type)
-    console.log('[DEBUG] body.photos[0].base64 length:', body.photos[0].base64?.length ?? 'MISSING')
+  const body = await req.json().catch(() => null)
+  if (!body) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
-  console.log('[DEBUG] ===== END RAW BODY =====')
 
-  console.log('[DEBUG] >> About to destructure body...')
   const {
     photos = [],
     items = [],
-
-    // Job type
     jobType,
-
-    // Pickup
     pickupAddress,
     pickupLat,
     pickupLng,
-    pickupCity,
-    pickupState,
-    pickupCountry,
-    pickupPostcode,
-
-    // Delivery
     deliveryAddress,
     deliveryLat,
     deliveryLng,
-    deliveryCity,
-    deliveryState,
-    deliveryCountry,
-    deliveryPostcode,
-
-    // Date
     moveDateType,
     moveDateFrom,
     moveDateTo,
-
-    // Optional details
     pickupFloor,
     deliveryFloor,
     itemLoading,
     itemUnloading,
-
     description,
   } = body
 
-  console.log('[DEBUG] >> Destructuring complete')
-  console.log('[DEBUG] photos after destructure type:', typeof photos)
-  console.log('[DEBUG] photos after destructure isArray:', Array.isArray(photos))
-  console.log('[DEBUG] photos after destructure length:', photos?.length ?? 'NOT AN ARRAY')
-  console.log('[DEBUG] photos after destructure value:', JSON.stringify(photos?.slice(0, 1)))
+  // --------------------------------------------------
+  // VALIDATE (before anything is written)
+  // --------------------------------------------------
+
+  if (!str(jobType, 60) || !str(pickupAddress) || !str(deliveryAddress)) {
+    return NextResponse.json(
+      { error: 'Job type, pickup and delivery address are required' },
+      { status: 400 },
+    )
+  }
+  if (!Array.isArray(items) || items.length > MAX_ITEMS) {
+    return NextResponse.json({ error: `Add up to ${MAX_ITEMS} items` }, { status: 400 })
+  }
+  if (!Array.isArray(photos) || photos.length > MAX_JOB_PHOTOS) {
+    return NextResponse.json(
+      { error: `You can add up to ${MAX_JOB_PHOTOS} photos` },
+      { status: 400 },
+    )
+  }
+
+  // Decode + check every photo up front so a bad file never leaves a half-created job
+  let photoBuffers
+  try {
+    photoBuffers = photos.map((photo) => {
+      const buffer = Buffer.from(String(photo?.base64 ?? ''), 'base64')
+      inspectUpload(buffer)
+      return buffer
+    })
+  } catch (err) {
+    if (err instanceof UploadError) {
+      return NextResponse.json({ error: `Photo rejected: ${err.message}` }, { status: 400 })
+    }
+    throw err
+  }
 
   // --------------------------------------------------
   // CREATE JOB
-  // Explicit mapping is safer than ...jobData
   // --------------------------------------------------
 
   const { data: job, error } = await supabase
     .from('jobs')
     .insert({
       customer_id: user.id,
+      type: str(jobType, 60),
 
-      type: jobType,
+      pickup_address: str(pickupAddress),
+      pickup_lat: num(pickupLat),
+      pickup_lng: num(pickupLng),
 
-      pickup_address: pickupAddress,
-      pickup_lat: pickupLat,
-      pickup_lng: pickupLng,
+      delivery_address: str(deliveryAddress),
+      delivery_lat: num(deliveryLat),
+      delivery_lng: num(deliveryLng),
 
-      delivery_address: deliveryAddress,
-      delivery_lat: deliveryLat,
-      delivery_lng: deliveryLng,
+      description: str(description, MAX_DESCRIPTION),
 
-      description,
-
-      // Add these ONLY if these columns exist
-      move_date_type: moveDateType,
+      move_date_type: str(moveDateType, 40),
       move_date_from: moveDateFrom || null,
       move_date_to: moveDateTo || null,
 
-      pickup_floor: pickupFloor,
-      delivery_floor: deliveryFloor,
+      pickup_floor: str(pickupFloor, 40),
+      delivery_floor: str(deliveryFloor, 40),
 
-      item_loading: itemLoading,
-      item_unloading: itemUnloading,
+      item_loading: str(itemLoading, 40),
+      item_unloading: str(itemUnloading, 40),
 
       status: 'open',
     })
@@ -135,7 +139,8 @@ export async function POST(req) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('[jobs/create] Job insert failed:', error.message)
+    return NextResponse.json({ error: 'Could not create your request' }, { status: 500 })
   }
 
   // --------------------------------------------------
@@ -145,12 +150,12 @@ export async function POST(req) {
   if (items.length > 0) {
     const formattedItems = items.map((item) => ({
       job_id: job.id,
-      name: item.name,
-      quantity: item.quantity,
-      weight_kg: item.weight_kg,
-      length_cm: item.length_cm,
-      width_cm: item.width_cm,
-      height_cm: item.height_cm,
+      name: str(item?.name, 120),
+      quantity: Math.max(1, Math.min(999, Math.round(num(item?.quantity) ?? 1))),
+      weight_kg: num(item?.weight_kg),
+      length_cm: num(item?.length_cm),
+      width_cm: num(item?.width_cm),
+      height_cm: num(item?.height_cm),
     }))
 
     const { error: itemsError } = await supabase
@@ -158,155 +163,103 @@ export async function POST(req) {
       .insert(formattedItems)
 
     if (itemsError) {
-      return NextResponse.json({ error: itemsError.message }, { status: 500 })
+      // Don't leave an item-less job behind; the customer can resubmit.
+      await supabaseAdmin.from('jobs').delete().eq('id', job.id)
+      console.error('[jobs/create] Items insert failed:', itemsError.message)
+      return NextResponse.json({ error: 'Could not save your items' }, { status: 500 })
     }
   }
 
   // --------------------------------------------------
-  // UPLOAD PHOTOS TO S3
+  // UPLOAD PHOTOS TO S3 (already validated)
   // --------------------------------------------------
 
-  console.log('[DEBUG] Entering photo upload loop. photos.length =', photos.length)
-
-  for (let i = 0; i < photos.length; i++) {
-    const photo = photos[i]
-    console.log(`[DEBUG] >>> LOOP BODY ENTERED for photo ${i + 1} <<<`)
+  let failedPhotos = 0
+  for (const buffer of photoBuffers) {
     try {
-      console.log(`[DEBUG] --- Photo ${i + 1}/${photos.length} ---`)
-      console.log(`[DEBUG] Photo type:`, photo.type)
-      console.log(`[DEBUG] Photo base64 length:`, photo.base64?.length ?? 'MISSING')
-
-      const buffer = Buffer.from(photo.base64, 'base64')
-      console.log(`[DEBUG] Buffer created, size:`, buffer.length, 'bytes')
-      console.log('[DEBUG] Calling uploadToS3()...')
-
-      const { key, url } = await uploadToS3({
-        buffer,
-        fileName: `${job.id}-${Math.random().toString(36).slice(2)}.jpg`,
-        mimeType: photo.type,
-        folder: `job-photos/${job.id}`,
-      })
-
-      console.log('[DEBUG] uploadToS3() returned successfully')
-      console.log('[DEBUG] S3 key:', key)
-      console.log('[DEBUG] S3 url:', url)
-
-      console.log('[DEBUG] Inserting into job_photos...')
-      const { data: insertedPhoto, error: photoInsertError } = await supabase
+      const { key, url } = await uploadToS3({ buffer, folder: `job-photos/${job.id}` })
+      const { error: photoInsertError } = await supabase
         .from('job_photos')
-        .insert({
-          job_id: job.id,
-          storage_path: key,
-          url,
-        })
-        .select()
-        .single()
-
-      console.log('[DEBUG] Insert result:', {
-        data: insertedPhoto,
-        error: photoInsertError
-          ? JSON.stringify(photoInsertError)
-          : null,
-      })
-
-      if (photoInsertError) {
-        console.error(
-          '[DEBUG] job_photos insert FAILED:',
-          JSON.stringify(photoInsertError, null, 2),
-        )
-      } else {
-        console.log(`[DEBUG] ✅ Photo ${i + 1} saved to DB successfully`)
-      }
-
-      console.log(`[DEBUG] --- Finished photo ${i + 1} ---`)
+        .insert({ job_id: job.id, storage_path: key, url })
+      if (photoInsertError) throw new Error(photoInsertError.message)
     } catch (err) {
-      console.error(`[DEBUG] ❌ Photo ${i + 1} upload ERROR:`, err)
-      console.error('[DEBUG] Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err)))
+      failedPhotos += 1
+      console.error('[jobs/create] Photo upload failed:', err.message)
     }
   }
 
-  console.log('[DEBUG] Photo upload loop finished')
-
   // --------------------------------------------------
-  // NOTIFY ALL ACTIVE CARRIERS ABOUT THE NEW JOB
-  // (non-blocking — job is already saved)
+  // NOTIFY MATCHING CARRIERS (non-blocking — job is already saved)
   // --------------------------------------------------
   try {
-    const { data: carriers, error: carriersError } = await supabaseAdmin
-      .from('carrier_profiles')
-      .select('id, email, public_name')
-      .eq('application_status', 'active')
-      .not('email', 'is', null)
-
-    if (carriersError) throw new Error(`Carrier fetch failed: ${carriersError.message}`)
-
-    if (carriers?.length > 0) {
-      const customerName = user.user_metadata?.first_name || user.email?.split('@')[0] || 'Someone'
-      const jobType = jobType?.replace(/_/g, ' ') || 'move'
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-
-      await Promise.all(
-        carriers.map((carrier) =>
-          sendEmail({
-            to: carrier.email,
-            subject: `New ${jobType} request available`,
-            html: `
-              <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1f2937">
-                <h2 style="color:#111827;font-size:22px;margin:0 0 8px">New move request!</h2>
-                <p style="color:#6b7280;font-size:14px;margin:0 0 24px;line-height:1.5">
-                  Hi ${carrier.public_name || 'there'},<br/>
-                  <strong>${customerName}</strong> just posted a new <strong>${jobType}</strong> request on Moving Easy.
-                </p>
-
-                <div style="background:#f9fafb;border-radius:12px;padding:20px;margin-bottom:24px">
-                  <table style="width:100%;border-collapse:collapse;font-size:14px">
-                    ${pickupAddress ? `
-                    <tr>
-                      <td style="padding:6px 0;color:#6b7280">Pickup</td>
-                      <td style="padding:6px 0;text-align:right;color:#374151">${pickupAddress}</td>
-                    </tr>` : ''}
-                    ${deliveryAddress ? `
-                    <tr>
-                      <td style="padding:6px 0;color:#6b7280">Delivery</td>
-                      <td style="padding:6px 0;text-align:right;color:#374151">${deliveryAddress}</td>
-                    </tr>` : ''}
-                    ${moveDateFrom ? `
-                    <tr>
-                      <td style="padding:6px 0;color:#6b7280">Earliest date</td>
-                      <td style="padding:6px 0;text-align:right;color:#374151">${moveDateFrom}</td>
-                    </tr>` : ''}
-                    ${description ? `
-                    <tr>
-                      <td style="padding:6px 0;color:#6b7280">Description</td>
-                      <td style="padding:6px 0;text-align:right;color:#374151;font-style:italic">${description.slice(0, 120)}${description.length > 120 ? '...' : ''}</td>
-                    </tr>` : ''}
-                    <tr>
-                      <td style="padding:6px 0;color:#6b7280">Job reference</td>
-                      <td style="padding:6px 0;text-align:right;font-family:monospace;color:#6b7280;font-size:12px">#${job.id.slice(0, 8)}</td>
-                    </tr>
-                  </table>
-                </div>
-
-                <a href="${appUrl}/dashboard/carrier/jobs/${job.id}"
-                   style="background:#2563eb;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px;margin-bottom:24px">
-                  View & Submit Quote →
-                </a>
-
-                <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;line-height:1.5">
-                  You received this email because you're an active carrier on Moving Easy. New requests are shared with all carriers.
-                </p>
-              </div>
-            `,
-          }),
-        ),
-      )
-    }
+    await notifyCarriers(job)
   } catch (emailErr) {
-    console.error('[jobs/create] Carrier notification failed:', emailErr)
+    console.error('[jobs/create] Carrier notification failed:', emailErr.message)
   }
 
   return NextResponse.json({
     success: true,
     jobId: job.id,
+    failedPhotos,
   })
+}
+
+// Email EVERY carrier (approved or awaiting approval) about the new job,
+// except those who turned job emails off. Carriers who can't quote yet get
+// told exactly what to finish. Also adds an in-app notification.
+async function notifyCarriers(job) {
+  const [{ data: carriers, error }, { data: prefs }] = await Promise.all([
+    supabaseAdmin
+      .from('carrier_profiles')
+      .select('id, public_name, application_status')
+      .in('application_status', ['active', 'pending']),
+    supabaseAdmin
+      .from('carrier_notification_preferences')
+      .select('carrier_id, email_frequency'),
+  ])
+  if (error) throw new Error(`Carrier fetch failed: ${error.message}`)
+
+  const optedOut = new Set(
+    (prefs ?? []).filter((p) => p.email_frequency === 'never').map((p) => p.carrier_id),
+  )
+  const targets = (carriers ?? []).filter((c) => !optedOut.has(c.id))
+  if (!targets.length) return
+
+  const ids = targets.map((c) => c.id)
+  const [checklists, contacts] = await Promise.all([
+    loadChecklists(ids),
+    // Emails live in auth.users, not carrier_profiles
+    Promise.all(ids.map((id) => getUserContact(id))),
+  ])
+
+  const messages = targets
+    .map((carrier, i) =>
+      contacts[i]
+        ? {
+            to: contacts[i].email,
+            ...newJobForCarrier({
+              carrierName: carrier.public_name,
+              job,
+              pending: carrier.application_status === 'pending',
+              missingSteps: (checklists[carrier.id]?.missing ?? []).map((m) => m.label),
+            }),
+          }
+        : null,
+    )
+    .filter(Boolean)
+
+  const jobLabel = String(job.type ?? 'move').replace(/_/g, ' ')
+  await Promise.all([
+    messages.length ? sendEmailBatch(messages) : null,
+    notifyMany(ids, {
+      type: 'new_job',
+      title: `New ${jobLabel} request`,
+      content: [job.pickup_address, job.delivery_address]
+        .map((a) => String(a ?? '').split(',').slice(-2).join(',').trim())
+        .join(' → '),
+      link: `/dashboard/carrier/jobs/${job.id}`,
+      jobId: job.id,
+    }),
+  ])
+  console.info(`[jobs/create] New-job email sent to ${messages.length} carrier(s)`)
 }

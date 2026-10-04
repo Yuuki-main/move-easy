@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { serverError } from '@/lib/api-errors'
 
 export async function PATCH(req) {
   const supabase = await createClient()
@@ -16,6 +17,6 @@ export async function PATCH(req) {
     .update({ public_name, profile_description, payment_methods })
     .eq('id', user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('carriers/settings/profile', error)
   return NextResponse.json({ success: true })
 }

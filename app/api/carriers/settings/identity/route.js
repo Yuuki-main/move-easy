@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { identitySchema } from '@/dashboard/carrier/settings/schemas'
+import { serverError } from '@/lib/api-errors'
 
 export async function PATCH(req) {
   const supabase = await createClient()
@@ -41,7 +42,7 @@ export async function PATCH(req) {
     .update({ timezone })
     .eq('id', user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('carriers/settings/identity', error)
 
   // Update last_name and date_of_birth on profiles table
   if (last_name !== undefined || date_of_birth !== undefined) {
@@ -54,7 +55,7 @@ export async function PATCH(req) {
       .update(profileUpdate)
       .eq('id', user.id)
 
-    if (profileErr) return NextResponse.json({ error: profileErr.message }, { status: 500 })
+    if (profileErr) return serverError('carriers/settings/identity', profileErr)
   }
 
   return NextResponse.json({ success: true })

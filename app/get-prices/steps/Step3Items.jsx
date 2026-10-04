@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { ACCEPT, MAX_JOB_PHOTOS, checkFileClient } from '@/lib/upload-rules'
 
 export default function Step3Items({ wizard }) {
   const { state, update, nextStep, prevStep } = wizard
@@ -43,8 +45,17 @@ export default function Step3Items({ wizard }) {
   }
 
   const handlePhotos = (e) => {
-    const files = Array.from(e.target.files || []).slice(0, 5)
-    update({ photos: files })
+    const picked = Array.from(e.target.files || [])
+    const problem = picked.map((f) => checkFileClient(f)).find(Boolean)
+    if (problem) {
+      toast.error(problem)
+      e.target.value = ''
+      return
+    }
+    if (picked.length > MAX_JOB_PHOTOS) {
+      toast.error(`You can add up to ${MAX_JOB_PHOTOS} photos`)
+    }
+    update({ photos: picked.slice(0, MAX_JOB_PHOTOS) })
   }
 
   return (
@@ -225,7 +236,7 @@ export default function Step3Items({ wizard }) {
           </span>
           <input
             type="file"
-            accept="image/*"
+            accept={ACCEPT.image}
             multiple
             onChange={handlePhotos}
             className="sr-only"

@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LogIn, Loader2 } from 'lucide-react'
 
+// useSearchParams() needs a Suspense boundary so the page can prerender
 export default function AdminLoginPage() {
+  return (
+    <Suspense>
+      <AdminLoginForm />
+    </Suspense>
+  )
+}
+
+function AdminLoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/admin'
+  const requested = searchParams.get('redirect') || '/admin'
+  // Only ever send the admin back into the admin area (no open redirects)
+  const redirect = requested.startsWith('/admin') ? requested : '/admin'
 
   const handleSubmit = async (e) => {
     e.preventDefault()

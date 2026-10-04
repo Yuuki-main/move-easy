@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function CancelJobButton({ jobId }) {
   const [loading, setLoading] = useState(false)
@@ -10,11 +11,19 @@ export default function CancelJobButton({ jobId }) {
 
   const cancel = async () => {
     setLoading(true)
-    await fetch('/api/jobs/cancel', {
+    const res = await fetch('/api/jobs/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId }),
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      toast.error(data.error || 'Could not cancel this request')
+      setLoading(false)
+      setConfirm(false)
+      return
+    }
+    toast.success('Request cancelled')
     router.push('/dashboard')
     router.refresh()
   }

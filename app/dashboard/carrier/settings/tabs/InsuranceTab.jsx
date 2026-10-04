@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Plus, Trash2, Shield, Upload } from 'lucide-react'
 import { insuranceSchema } from '../schemas'
+import { ACCEPT, checkFileClient } from '@/lib/upload-rules'
 
 export default function InsuranceTab({ carrierId, insurance: initial }) {
   const [policies, setPolicies] = useState(initial ?? [])
   const [showAdd, setShowAdd] = useState(false)
   const [proofFile, setProofFile] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const fileRef = useRef(null)
+  // Bumped to remount (clear) the file input after a successful add
+  const [fileInputKey, setFileInputKey] = useState(0)
 
   const {
     register,
@@ -66,7 +68,7 @@ export default function InsuranceTab({ carrierId, insurance: initial }) {
       reset()
       setProofFile(null)
       setShowAdd(false)
-      if (fileRef.current) fileRef.current.value = ''
+      setFileInputKey((k) => k + 1)
       toast.success('Insurance policy added')
     } else {
       const err = await res.json()
@@ -163,10 +165,20 @@ export default function InsuranceTab({ carrierId, insurance: initial }) {
               <Upload size={14} />
               {proofFile ? proofFile.name : 'Upload file'}
               <input
-                ref={fileRef}
+                key={fileInputKey}
                 type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                accept={ACCEPT.imageOrPdf}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null
+                  const problem = file && checkFileClient(file, { allowPdf: true })
+                  if (problem) {
+                    toast.error(problem)
+                    e.target.value = ''
+                    setProofFile(null)
+                    return
+                  }
+                  setProofFile(file)
+                }}
                 className="hidden"
               />
             </label>

@@ -197,6 +197,9 @@ export default function CarrierRegisterPage() {
       return
     }
 
+    // Confirmation email to the applicant + heads-up to the admin
+    await fetch('/api/carriers/registered', { method: 'POST' }).catch(() => {})
+
     router.push('/dashboard/carrier')
     router.refresh()
   }

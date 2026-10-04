@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { carrierApiSchema } from '@/lib/validations/auth'
+import { trySendEmail } from '@/lib/email'
+import {
+  carrierApplicationForAdmin,
+  carrierApplicationReceived,
+} from '@/lib/email-templates'
+import { serverError } from '@/lib/api-errors'
 
 export async function POST(req) {
   const supabase = await createClient()
@@ -69,7 +75,7 @@ export async function POST(req) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return serverError('carriers/register', error)
   }
 
   // 2. Save address
@@ -85,7 +91,7 @@ export async function POST(req) {
     })
 
   if (addressError) {
-    return NextResponse.json({ error: addressError.message }, { status: 500 })
+    return serverError('carriers/register', addressError)
   }
 
   // 3. Update user role
@@ -97,8 +103,30 @@ export async function POST(req) {
     .eq('id', user.id)
 
   if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 500 })
+    return serverError('carriers/register', profileError)
   }
+
+  // Let the applicant know we have it, and tell the admin there's one to review.
+  await Promise.all([
+    user.email &&
+      trySendEmail(
+        { to: user.email, ...carrierApplicationReceived({ name: data.displayName }) },
+        'carriers/register',
+      ),
+    process.env.ADMIN_EMAIL &&
+      trySendEmail(
+        {
+          to: process.env.ADMIN_EMAIL,
+          ...carrierApplicationForAdmin({
+            name: data.displayName,
+            company: data.companyName,
+            email: user.email,
+            carrierId: carrier.id,
+          }),
+        },
+        'carriers/register',
+      ),
+  ])
 
   return NextResponse.json({
     success: true,

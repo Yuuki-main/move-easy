@@ -41,7 +41,7 @@ function FooterLink({ href, children }) {
     <li>
       <Link
         href={href}
-        className="text-sm text-black hover:text-white transition-colors flex items-center gap-1 group"
+        className="text-sm text-black hover:text-[#1c293c] transition-colors flex items-center gap-1 group hover:font-semibold"
       >
         <ChevronRight className="h-3.5 w-3.5 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
         {children}
@@ -139,7 +139,7 @@ export default function Footer() {
             href="https://crestwave.com.au/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-slate-300 transition-colors text-sm text-black"
+            className="hover:text-[#1c293c]  transition-colors text-sm text-black"
           >
             &copy; 2026 Crestwave Digital PTY LTD. All development rights
             reserved.
@@ -148,13 +148,13 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <Link
               href="/privacy"
-              className="text-sm text-black hover:text-slate-300 transition-colors"
+              className="text-sm text-black hover:text-[#1c293c] transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms"
-              className="text-sm text-black hover:text-slate-300 transition-colors"
+              className="text-sm text-black hover:text-[#1c293c] transition-colors"
             >
               Terms of Service
             </Link>

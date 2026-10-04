@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { serverError } from '@/lib/api-errors'
 
 export async function POST(req) {
   const supabase = await createClient()
@@ -33,6 +34,6 @@ export async function POST(req) {
     .update({ photos })
     .eq('id', user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('carriers/settings/photos/reorder', error)
   return NextResponse.json({ success: true })
 }

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Reviews | Moving Easy',
+  title: 'Reviews',
   description: 'Read verified reviews from thousands of Moving Easy customers across New Zealand.',
 }
 

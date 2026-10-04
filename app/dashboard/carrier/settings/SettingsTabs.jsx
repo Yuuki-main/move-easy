@@ -19,6 +19,7 @@ const TABS = [
 ]
 
 export default function SettingsTabs({
+  initialTab,
   carrier,
   profile,
   userEmail,
@@ -27,7 +28,10 @@ export default function SettingsTabs({
   insurance: initialInsurance,
   notifications: initialNotifications,
 }) {
-  const [activeTab, setActiveTab] = useState('identity')
+  // ?tab=photos etc. opens a specific tab (used by the profile checklist links)
+  const [activeTab, setActiveTab] = useState(
+    TABS.some((t) => t.id === initialTab) ? initialTab : 'identity',
+  )
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const ActiveIcon = TABS.find((t) => t.id === activeTab)?.icon || User

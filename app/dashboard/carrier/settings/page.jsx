@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SettingsTabs from './SettingsTabs'
 
-export default async function CarrierSettingsPage() {
+export default async function CarrierSettingsPage({ searchParams }) {
+  const { tab } = await searchParams
   const supabase = await createClient()
 
   const {
@@ -55,6 +56,7 @@ export default async function CarrierSettingsPage() {
 
   return (
     <SettingsTabs
+      initialTab={tab}
       carrier={carrier}
       profile={profile}
       userEmail={user.email}

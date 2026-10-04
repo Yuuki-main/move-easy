@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import "./globals.css";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,46 +22,36 @@ export const viewport = {
 };
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Moving Easy - Move Smarter, Move Easier",
-    template: "%s | Moving Easy",
+    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Find trusted moving services, compare quotes, and book your move with ease. Moving Easy connects you with professional movers for a stress-free relocation experience.",
+    "Find trusted moving services across New Zealand, compare quotes, and book your move with ease. Moving Easy connects you with professional movers for a stress-free move.",
   keywords: [
     "moving services",
-    "relocation",
-    "movers",
+    "movers NZ",
+    "removals New Zealand",
     "moving company",
-    "packing services",
-    "local move",
-    "long distance move",
+    "furniture removal",
+    "car transport",
+    "compare moving quotes",
   ],
-  authors: [{ name: "Moving Easy" }],
-  creator: "Moving Easy",
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  // Images come from app/opengraph-image.jsx and app/twitter-image.jsx
   openGraph: {
     type: "website",
-    locale: "en_US",
-    url: "https://moving-easy.com",
-    siteName: "Moving Easy",
-    title: "Moving Easy - Move Smarter, Move Easier",
-    description:
-      "Find trusted moving services, compare quotes, and book your move with ease.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Moving Easy - Move Smarter, Move Easier",
-      },
-    ],
+    locale: "en_NZ",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Moving Easy - Move Smarter, Move Easier",
-    description:
-      "Find trusted moving services, compare quotes, and book your move with ease.",
-    images: ["/og-image.png"],
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
   },
   robots: {
     index: true,
@@ -71,7 +62,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html
-      lang="en"
+      lang="en-NZ"
       className={`${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >

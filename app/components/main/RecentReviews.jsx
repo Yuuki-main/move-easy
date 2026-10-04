@@ -28,6 +28,7 @@ export default async function RecentReviews() {
     rating: r.rating,
     comment: r.comment,
     created_at: r.created_at,
+    timeAgo: timeAgoLabel(r.created_at),
     carrierId: r.carrier_id,
     carrierName: r.carrier_profiles?.public_name ?? null,
     route: r.jobs
@@ -58,4 +59,11 @@ export default async function RecentReviews() {
       </div>
     </section>
   )
+}
+
+function timeAgoLabel(createdAt) {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return `${days} days ago`
 }

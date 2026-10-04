@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service-role'
 import Link from 'next/link'
+import BookingActions from '@/components/BookingActions'
 
 const STATUS_STYLES = {
   open: 'bg-blue-100 text-blue-700',
@@ -17,6 +18,17 @@ export default async function AdminJobsPage() {
     .select('*, quotes (count)')
     .order('created_at', { ascending: false })
     .limit(100)
+
+  // Live bookings, so admins can complete or cancel them
+  const bookedIds = (jobs ?? []).filter((j) => j.status === 'booked').map((j) => j.id)
+  const { data: liveBookings } = bookedIds.length
+    ? await supabase
+        .from('bookings')
+        .select('id, job_id')
+        .in('job_id', bookedIds)
+        .eq('status', 'confirmed')
+    : { data: [] }
+  const bookingByJob = Object.fromEntries((liveBookings ?? []).map((b) => [b.job_id, b.id]))
 
   const total = jobs?.length ?? 0
   const byStatus = (s) => jobs?.filter((j) => j.status === s).length ?? 0
@@ -89,9 +101,11 @@ export default async function AdminJobsPage() {
                         })}
                       </td>
                       <td className="px-5 py-3.5">
-                        <Link href={`/dashboard/jobs/${job.id}`} className="text-xs text-gray-400 hover:text-gray-700">
-                          View →
-                        </Link>
+                        {bookingByJob[job.id] ? (
+                          <BookingActions bookingId={bookingByJob[job.id]} role="admin" size="sm" />
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
                       </td>
                     </tr>
                   )

@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
-export default function ReviewForm({ bookingId, jobId, carrierId }) {
+export default function ReviewForm({ bookingId, carrierName }) {
   const [rating, setRating] = useState(8)
   const [comment, setComment] = useState('')
   const [loading, setLoading] = useState(false)
@@ -14,11 +15,11 @@ export default function ReviewForm({ bookingId, jobId, carrierId }) {
     const res = await fetch('/api/reviews/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId, jobId, carrierId, rating, comment }),
+      body: JSON.stringify({ bookingId, rating, comment }),
     })
-    const data = await res.json()
-    if (data.error) {
-      alert(data.error)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast.error(data.error || 'Could not save your review')
       setLoading(false)
       return
     }
@@ -35,8 +36,10 @@ export default function ReviewForm({ bookingId, jobId, carrierId }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border p-6">
-      <h2 className="font-bold text-lg mb-4">How was your move?</h2>
+    <div id="review" className="bg-white rounded-xl border p-6 scroll-mt-24">
+      <h2 className="font-bold text-lg mb-4">
+        How was your move{carrierName ? ` with ${carrierName}` : ''}?
+      </h2>
       <div className="mb-4">
         <label className="text-sm font-medium text-gray-700 block mb-2">
           Rating: {rating}/10

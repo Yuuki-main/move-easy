@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import GetPricesClient from './GetPricesClient'
 
 export const metadata = {
-  title: 'Get Prices | Moving Easy',
+  title: 'Get Prices',
 }
 
 export default async function GetPricesPage() {

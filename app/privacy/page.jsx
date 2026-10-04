@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Privacy Policy | Moving Easy',
+  title: 'Privacy Policy',
   description:
     'Learn how Moving Easy collects, uses, and protects your personal information.',
 }
@@ -67,7 +67,7 @@ const SECTIONS = [
   },
   {
     title: '16. Data deletion requests',
-    body: 'You may request that we delete personal information we hold about you. To request deletion of your data, please contact us via our Contact Us page or email us at support@wisemove.co.nz, specifying your request and the account or information you would like deleted. We may need to verify your identity before processing a deletion request. Please note that we may retain certain information where required for legal, regulatory, accounting, dispute resolution, or enforcement purposes, or where retention is reasonably necessary for the operation of the website. Where deletion is possible, we will take reasonable steps to delete or de-identify the relevant personal information within a reasonable timeframe.',
+    body: 'You may request that we delete personal information we hold about you. To request deletion of your data, please contact us via our Contact Us page or email us at info@movingeasy.co.nz, specifying your request and the account or information you would like deleted. We may need to verify your identity before processing a deletion request. Please note that we may retain certain information where required for legal, regulatory, accounting, dispute resolution, or enforcement purposes, or where retention is reasonably necessary for the operation of the website. Where deletion is possible, we will take reasonable steps to delete or de-identify the relevant personal information within a reasonable timeframe.',
   },
 ]
 
@@ -78,10 +78,10 @@ export default function PrivacyPage() {
         Privacy Policy
       </h1>
       <p className="text-sm text-gray-400 mb-12">
-        Moving Easy Enterprises Pte. Ltd. (&ldquo;Moving Easy&rdquo;,
-        &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates a
-        booking website that allows customers to request and arrange transport
-        services with independent providers (&ldquo;carriers&rdquo;).
+        Moving Easy Limited. (&ldquo;Moving Easy&rdquo;, &ldquo;we&rdquo;,
+        &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates a booking website that
+        allows customers to request and arrange transport services with
+        independent providers (&ldquo;carriers&rdquo;).
       </p>
       <p className="text-sm text-gray-600 mb-12 leading-relaxed">
         This Privacy Policy explains how we collect, use, store, and disclose
@@ -92,9 +92,7 @@ export default function PrivacyPage() {
       <div className="space-y-10">
         {SECTIONS.map((s) => (
           <section key={s.title}>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">
-              {s.title}
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">{s.title}</h2>
             <p className="text-sm text-gray-600 leading-relaxed">{s.body}</p>
           </section>
         ))}

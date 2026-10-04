@@ -19,7 +19,25 @@ import {
   Lock,
   MessageSquare,
   PackageCheck,
+  FileText,
+  CircleCheck,
+  CircleX,
+  Star,
+  Bell,
 } from 'lucide-react'
+
+// Icon + colour per notification type
+const NOTIFICATION_STYLE = {
+  chat_message: { icon: MessageSquare, bg: 'bg-blue-100', fg: 'text-blue-700' },
+  new_quote: { icon: FileText, bg: 'bg-teal-100', fg: 'text-teal-700' },
+  quote_accepted: { icon: PackageCheck, bg: 'bg-green-100', fg: 'text-green-700' },
+  booking_completed: { icon: CircleCheck, bg: 'bg-teal-100', fg: 'text-teal-700' },
+  booking_cancelled: { icon: CircleX, bg: 'bg-red-100', fg: 'text-red-600' },
+  job_cancelled: { icon: CircleX, bg: 'bg-red-100', fg: 'text-red-600' },
+  new_review: { icon: Star, bg: 'bg-amber-100', fg: 'text-amber-700' },
+  new_job: { icon: Truck, bg: 'bg-teal-100', fg: 'text-teal-700' },
+}
+const DEFAULT_STYLE = { icon: Bell, bg: 'bg-zinc-100', fg: 'text-zinc-600' }
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 
@@ -106,25 +124,26 @@ export default function NavbarClient({
     setAvatarOpen((v) => !v)
   }
 
+  function markRead(body) {
+    fetch('/api/notifications/mark-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {})
+  }
+
   function handleNotificationClick(n) {
     setAvatarOpen(false)
     // Optimistically clear this notification from the badge
     setLocalNotifications((prev) => prev.filter((x) => x.id !== n.id))
     setLocalUnreadCount((c) => Math.max(0, c - 1))
+    markRead({ notificationIds: [n.id] })
+  }
 
-    if (n.kind === 'chat') {
-      fetch('/api/notifications/mark-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationIds: [n.id] }),
-      }).catch(() => {})
-    } else {
-      fetch('/api/bookings/mark-viewed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingIds: [n.id] }),
-      }).catch(() => {})
-    }
+  function handleMarkAllRead() {
+    setLocalNotifications([])
+    setLocalUnreadCount(0)
+    markRead({ all: true })
   }
 
   const navLinks = getNavLinks(role)
@@ -291,55 +310,46 @@ export default function NavbarClient({
 
                         {localNotifications.length > 0 && (
                           <div className="border-b border-zinc-100 py-1">
+                            <div className="flex items-center justify-between px-4 pt-1 pb-1.5">
+                              <p className="text-xs font-semibold text-zinc-500">
+                                Notifications ({localUnreadCount})
+                              </p>
+                              <button
+                                onClick={handleMarkAllRead}
+                                className="text-xs font-medium text-teal-700 hover:underline"
+                              >
+                                Mark all read
+                              </button>
+                            </div>
                             {localNotifications.map((n) => {
-                              const href = n.jobId
-                                ? n.kind === 'chat' && !isCarrier
-                                  ? `/dashboard/jobs/${n.jobId}`
-                                  : `/dashboard/carrier/jobs/${n.jobId}`
-                                : isCarrier
-                                  ? '/dashboard/carrier/jobs'
-                                  : '/dashboard/jobs'
+                              const style = NOTIFICATION_STYLE[n.type] ?? DEFAULT_STYLE
+                              const Icon = style.icon
+                              const href =
+                                n.link ||
+                                (n.jobId
+                                  ? isCarrier
+                                    ? `/dashboard/carrier/jobs/${n.jobId}`
+                                    : `/dashboard/jobs/${n.jobId}`
+                                  : isCarrier
+                                    ? '/dashboard/carrier'
+                                    : '/dashboard/jobs')
 
                               return (
                                 <Link
-                                  key={`${n.kind}-${n.id}`}
+                                  key={n.id}
                                   href={href}
                                   onClick={() => handleNotificationClick(n)}
                                   className="flex items-start gap-3 px-4 py-2.5 hover:bg-zinc-50 transition-colors"
                                 >
-                                  {n.kind === 'chat' ? (
-                                    <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-blue-100">
-                                      <MessageSquare size={14} className="text-blue-700" />
-                                    </span>
-                                  ) : (
-                                    <span className="mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-green-100">
-                                      <PackageCheck size={14} className="text-green-700" />
-                                    </span>
-                                  )}
+                                  <span
+                                    className={`mt-0.5 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg ${style.bg}`}
+                                  >
+                                    <Icon size={14} className={style.fg} />
+                                  </span>
                                   <div className="min-w-0">
-                                    {n.kind === 'chat' ? (
-                                      <>
-                                        <p className="text-sm font-medium text-zinc-900">
-                                          New message
-                                        </p>
-                                        <p className="text-xs text-zinc-500 truncate">
-                                          {n.content}
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <p className="text-sm font-medium text-zinc-900">
-                                          Quote accepted{n.type ? ` — ${n.type.replace(/_/g, ' ')}` : ''}
-                                        </p>
-                                        <p className="text-xs text-zinc-500 truncate">
-                                          {n.pickup?.split(',')[0]} → {n.delivery?.split(',')[0]}
-                                        </p>
-                                        {n.price != null && (
-                                          <p className="text-xs text-green-600 font-semibold mt-0.5">
-                                            ${Number(n.price).toLocaleString('en-NZ')}
-                                          </p>
-                                        )}
-                                      </>
+                                    <p className="text-sm font-medium text-zinc-900">{n.title}</p>
+                                    {n.content && (
+                                      <p className="text-xs text-zinc-500 truncate">{n.content}</p>
                                     )}
                                   </div>
                                 </Link>

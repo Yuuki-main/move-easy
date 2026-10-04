@@ -2,10 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Calendar, Users } from 'lucide-react'
-import ChatPanel from '@/components/ChatPanel'
 import ReviewForm from '@/components/ReviewForm'
 import QuotesSection from './QuotesSection'
 import CancelJobButton from './CancelJobButton'
+import BookingActions from '@/components/BookingActions'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import ShipmentMap from '@/components/shipment/ShipmentMap'
 
 export default async function CustomerJobDetailPage({ params }) {
@@ -24,8 +25,6 @@ export default async function CustomerJobDetailPage({ params }) {
     .eq('customer_id', user.id)
     .single()
 
-  console.log('job', { job })
-
   if (!job)
     return <p className="text-center py-20 text-gray-400">Job not found.</p>
 
@@ -34,6 +33,7 @@ export default async function CustomerJobDetailPage({ params }) {
     .from('quotes')
     .select('*, carrier_profiles(public_name, profile_description, phone)')
     .eq('job_id', id)
+    .neq('status', 'withdrawn')
     .order('price', { ascending: true })
 
   // Enrich each quote with full carrier profile + most recent review
@@ -56,41 +56,50 @@ export default async function CustomerJobDetailPage({ params }) {
     }),
   )
 
-  const acceptedQuote = enrichedQuotes.find((q) => q.status === 'accepted')
-
-  // Fetch booking (if job has been booked)
+  // Latest booking for this job (a job can have a cancelled booking and a new one)
   const { data: booking } = await supabase
     .from('bookings')
     .select('*')
     .eq('job_id', job.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
-  // Fetch conversation if booking exists
-  let conversationId = null
-  if (booking) {
-    const { data: conv } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('booking_id', booking.id)
-      .maybeSingle()
-    conversationId = conv?.id ?? null
-  }
+  // Fetch one conversation per carrier who has quoted (chat is available pre-acceptance too)
+  const { data: conversations } = await supabase
+    .from('conversations')
+    .select('id, carrier_id')
+    .eq('job_id', job.id)
 
-  // Check if a review already exists for this booking
-  const { data: existingReview } = booking
-    ? await supabase
-        .from('reviews')
-        .select('id')
-        .eq('booking_id', booking.id)
-        .maybeSingle()
-    : { data: null }
+  const conversationsByCarrier = Object.fromEntries(
+    (conversations ?? []).map((c) => [c.carrier_id, c.id]),
+  )
 
-  // Fetch carrier contact when booked
+  // Has this booking been reviewed already? (reviews.booking_id — migration 009)
+  const { data: existingReview } =
+    booking?.status === 'completed'
+      ? await supabaseAdmin
+          .from('reviews')
+          .select('id, rating')
+          .eq('booking_id', booking.id)
+          .maybeSingle()
+      : { data: null }
+
+  // Carrier contact while booked / after completion
   const { data: carrierContact } =
-    job.status === 'booked' && booking
+    booking && booking.status !== 'cancelled'
       ? await supabase
           .from('carrier_profiles')
           .select('public_name, phone, city')
+          .eq('id', booking.carrier_id)
+          .single()
+      : { data: null }
+
+  const { data: cancelledCarrier } =
+    booking?.status === 'cancelled'
+      ? await supabase
+          .from('carrier_profiles')
+          .select('public_name')
           .eq('id', booking.carrier_id)
           .single()
       : { data: null }
@@ -156,8 +165,43 @@ export default async function CustomerJobDetailPage({ params }) {
         </p>
       </div>
 
-      {/* Revealed carrier contact — only when booked */}
-      {job.status === 'booked' && carrierContact && (
+      {/* Booking cancelled — tell the customer what happens next */}
+      {booking?.status === 'cancelled' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6 text-sm text-amber-900">
+          <p className="font-semibold mb-1">
+            Your booking with {cancelledCarrier?.public_name ?? 'the mover'} was cancelled
+            {booking.cancelled_by === 'carrier'
+              ? ' by the mover'
+              : booking.cancelled_by === 'admin'
+                ? ' by Moving Easy support'
+                : ''}
+            .
+          </p>
+          {booking.cancellation_reason && (
+            <p className="text-amber-800">Reason: {booking.cancellation_reason}</p>
+          )}
+          {['open', 'quoted'].includes(job.status) && (
+            <p className="mt-2 text-amber-800">
+              Your request is open again — choose another quote below.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Completed */}
+      {booking?.status === 'completed' && carrierContact && (
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-5 mb-6 text-sm text-teal-900">
+          <p className="font-semibold">
+            ✓ Move completed with {carrierContact.public_name}
+          </p>
+          {existingReview && (
+            <p className="mt-1 text-teal-800">You rated this move {existingReview.rating}/10. Thanks!</p>
+          )}
+        </div>
+      )}
+
+      {/* Revealed carrier contact — only while booked */}
+      {booking?.status === 'confirmed' && carrierContact && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
           <p className="font-semibold text-green-800 mb-3">
             ✅ Booking confirmed — contact details revealed
@@ -176,6 +220,12 @@ export default async function CustomerJobDetailPage({ params }) {
           <p className="text-xs text-green-500 mt-3">
             You can now contact your carrier directly to arrange collection.
           </p>
+          <div className="mt-4 border-t border-green-200 pt-4">
+            <p className="text-xs text-green-700 mb-2">
+              Once the move is done, mark it complete to leave a review.
+            </p>
+            <BookingActions bookingId={booking.id} role="customer" />
+          </div>
         </div>
       )}
 
@@ -184,7 +234,12 @@ export default async function CustomerJobDetailPage({ params }) {
         Quotes received ({enrichedQuotes.length})
       </h2>
 
-      <QuotesSection quotes={enrichedQuotes} job={job} userId={user.id} />
+      <QuotesSection
+        quotes={enrichedQuotes}
+        job={job}
+        userId={user.id}
+        conversationsByCarrier={conversationsByCarrier}
+      />
 
       {/* ─────────────────────────────────────── */}
       {/* My delivery details                     */}
@@ -386,28 +441,14 @@ export default async function CustomerJobDetailPage({ params }) {
           >
             Create new request
           </Link>
-          {job.status === 'open' && <CancelJobButton jobId={job.id} />}
+          {['open', 'quoted'].includes(job.status) && <CancelJobButton jobId={job.id} />}
         </div>
       </div>
 
-      {/* Chat panel — only shown after a quote is accepted */}
-      {acceptedQuote && conversationId && (
+      {/* Review form — only once the move is completed, and only once */}
+      {booking?.status === 'completed' && !existingReview && (
         <div className="mt-6">
-          <ChatPanel
-            conversationId={conversationId}
-            currentUserId={user.id}
-          />
-        </div>
-      )}
-
-      {/* Review form — only when booking confirmed and no review yet */}
-      {booking?.status === 'confirmed' && !existingReview && (
-        <div className="mt-6">
-          <ReviewForm
-            bookingId={booking.id}
-            jobId={job.id}
-            carrierId={booking.carrier_id}
-          />
+          <ReviewForm bookingId={booking.id} carrierName={carrierContact?.public_name} />
         </div>
       )}
     </div>

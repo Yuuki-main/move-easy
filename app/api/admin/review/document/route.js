@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyAdminToken, COOKIE_NAME } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase/service-role'
+import { serverError } from '@/lib/api-errors'
 
 export async function POST(req) {
   // Re-check admin session server-side
@@ -28,14 +29,11 @@ export async function POST(req) {
     })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return serverError('admin/review/document', error)
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message || 'Internal error' },
-      { status: 500 },
-    )
+    return serverError('admin/review/document', err)
   }
 }
