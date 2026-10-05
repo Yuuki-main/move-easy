@@ -3,22 +3,21 @@ import HowItWorksAnimated from './HowItWorksAnimated'
 const STEPS = [
   {
     num: '01',
-    image:
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=450&fit=crop&crop=center',
+    image: '/home/create_your_request.jpg',
+    // Portrait photo: keep the face in the wide frame
+    imagePosition: 'center 12%',
     title: 'Create your request',
     desc: "Tell us what you're moving, where from and to, and when. Add photos and details so carriers can give accurate quotes.",
   },
   {
     num: '02',
-    image:
-      'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&h=450&fit=crop&crop=center',
+    image: '/home/get_quotes_from_carriers.png',
     title: 'Get quotes from carriers',
     desc: 'Verified carriers across New Zealand review your request and send competitive quotes. Compare prices, ratings, and reviews.',
   },
   {
     num: '03',
-    image:
-      'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop&crop=center',
+    image: '/home/book_with_confidence.png',
     title: 'Book with confidence',
     desc: 'Choose the best quote and confirm your booking. Your carrier handles the rest — pickup, transport, and delivery.',
   },

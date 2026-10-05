@@ -1,7 +1,13 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Share2, AtSign, Link2, Send, ChevronRight, ArrowRight, Mail } from 'lucide-react'
+import {
+  Share2,
+  AtSign,
+  Link2,
+  Send,
+  ChevronRight,
+} from 'lucide-react'
 
 const footerLinks = {
   quickLinks: [
@@ -62,7 +68,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10">
           {/* Company Info */}
-          <div className="sm:col-span-2 lg:col-span-3">
+          <div className="sm:col-span-2 lg:col-span-4">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <Image
                 src="/main/move_eazy_logo.png"
@@ -135,29 +141,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Get quotes + contact, then Legal */}
-          <div className="flex flex-col items-start sm:col-span-2 lg:col-span-3">
-            <div className="w-full rounded-2xl bg-zinc-900 p-5 text-white mb-8">
-              <p className="text-base font-semibold">Moving soon?</p>
-              <p className="mt-1 text-sm text-zinc-300">
-                Compare quotes from trusted movers — it&apos;s free.
-              </p>
-              <Link
-                href="/get-prices"
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100"
-              >
-                Get free quotes
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="mailto:support@movingeasy.co.nz"
-                className="mt-4 flex items-center gap-2 text-sm text-zinc-300 transition-colors hover:text-white"
-              >
-                <Mail className="h-4 w-4" />
-                support@movingeasy.co.nz
-              </a>
-            </div>
-
+          {/* Legal */}
+          <div className="flex flex-col items-start lg:col-span-2">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
               Legal
             </h4>

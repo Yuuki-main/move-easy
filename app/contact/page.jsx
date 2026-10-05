@@ -66,10 +66,10 @@ export default function ContactPage() {
                 For general enquiries, booking issues, or feedback.
               </p>
               <a
-                href="mailto:support@movingeasy.co.nz"
+                href="mailto:info@movingeasy.co.nz"
                 className="text-blue-600 font-semibold hover:underline text-sm"
               >
-                support@movingeasy.co.nz
+                info@movingeasy.co.nz
               </a>
             </div>
           </div>

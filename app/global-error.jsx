@@ -8,13 +8,20 @@ export default function GlobalError({ error, unstable_retry }) {
       <body className="flex min-h-screen items-center justify-center bg-white px-4 font-sans">
         <title>Something went wrong | Moving Easy</title>
         <div className="max-w-md text-center">
-          <p className="text-sm font-bold tracking-wide text-gray-900">MOVING EASY</p>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">Something went wrong</h1>
+          <p className="text-sm font-bold tracking-wide text-gray-900">
+            MOVING EASY
+          </p>
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">
+            Something went wrong
+          </h1>
           <p className="mt-2 text-sm text-gray-500">
-            Please try again. If it keeps happening, contact support@movingeasy.co.nz
+            Please try again. If it keeps happening, contact
+            info@movingeasy.co.nz
             {error?.digest && (
               <>
-                {' '}and quote reference <span className="font-mono">{error.digest}</span>
+                {' '}
+                and quote reference{' '}
+                <span className="font-mono">{error.digest}</span>
               </>
             )}
             .

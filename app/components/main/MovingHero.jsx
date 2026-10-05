@@ -53,11 +53,13 @@ export default function MovingHero({ reviewCount, avgRating, isCarrier }) {
   return (
     <section className="relative min-h-screen flex items-center bg-black -mt-20">
       <Image
-        src="/main/moving_hero_img.jpg"
-        alt="Moving company"
+        src="/home/main-banner.png"
+        alt="Moving Easy crew loading a truck"
         fill
         priority
-        className="object-cover object-center"
+        sizes="100vw"
+        // Crew stand centre-right; keep them in frame when the screen is narrow
+        className="object-cover object-[65%_center]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
 

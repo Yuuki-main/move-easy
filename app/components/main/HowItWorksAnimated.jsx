@@ -24,6 +24,7 @@ export default function HowItWorksAnimated({ steps }) {
               alt={step.title}
               fill
               className="object-cover"
+              style={step.imagePosition ? { objectPosition: step.imagePosition } : undefined}
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
