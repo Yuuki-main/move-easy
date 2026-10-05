@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Share2, AtSign, Link2, Send, ChevronRight } from 'lucide-react'
+import { Share2, AtSign, Link2, Send, ChevronRight, ArrowRight, Mail } from 'lucide-react'
 
 const footerLinks = {
   quickLinks: [
@@ -9,15 +9,20 @@ const footerLinks = {
     { label: 'Reviews', href: '/reviews' },
     { label: 'Contact Us', href: '/contact' },
   ],
+  // Keep in sync with SERVICES in app/services/[slug]/page.jsx
   services: [
-    { label: 'Cape Town', href: '/services/capetown' },
-    { label: 'Johannesburg', href: '/services/johannesburg' },
-    { label: 'Durban', href: '/services/durban' },
-    { label: 'Pretoria', href: '/services/pretoria' },
-    { label: 'Port Elizabeth', href: '/services/port-elizabeth' },
-    { label: 'Bloemfontein', href: '/services/bloemfontein' },
+    { label: 'Home moves', href: '/services/home-move' },
+    { label: 'Office moves', href: '/services/office-move' },
+    { label: 'Furniture removals', href: '/services/furniture-removal' },
     { label: 'Car transport', href: '/services/car-transport' },
-    { label: 'Furniture removals', href: '/services/furniture-removals' },
+    { label: 'Storage', href: '/services/storage' },
+    { label: 'Junk removal', href: '/services/junk-removal' },
+  ],
+  movers: [
+    { label: 'Become a mover', href: '/carrier-register' },
+    { label: 'Mover login', href: '/login' },
+    { label: 'Browse jobs', href: '/dashboard/carrier/jobs' },
+    { label: 'How it works for movers', href: '/for-movers' },
   ],
   legal: [
     { label: 'Terms & Conditions', href: '/terms' },
@@ -55,9 +60,9 @@ export default function Footer() {
     <footer className="bg-white text-black">
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10">
           {/* Company Info */}
-          <div className="lg:col-span-1">
+          <div className="sm:col-span-2 lg:col-span-3">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <Image
                 src="/main/move_eazy_logo.png"
@@ -89,7 +94,7 @@ export default function Footer() {
           </div>
 
           {/* Resources */}
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-start lg:col-span-2">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
               Resources
             </h4>
@@ -102,10 +107,10 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Get Prices */}
-          {/* <div className="flex flex-col items-start">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-5">
-              Get Prices
+          {/* Services */}
+          <div className="flex flex-col items-start lg:col-span-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
+              Services
             </h4>
             <ul className="space-y-3">
               {footerLinks.services.map((link) => (
@@ -114,10 +119,45 @@ export default function Footer() {
                 </FooterLink>
               ))}
             </ul>
-          </div> */}
+          </div>
 
-          {/* Legal */}
-          <div className="flex flex-col items-start">
+          {/* For Movers */}
+          <div className="flex flex-col items-start lg:col-span-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
+              For Movers
+            </h4>
+            <ul className="space-y-3">
+              {footerLinks.movers.map((link) => (
+                <FooterLink key={link.href} href={link.href}>
+                  {link.label}
+                </FooterLink>
+              ))}
+            </ul>
+          </div>
+
+          {/* Get quotes + contact, then Legal */}
+          <div className="flex flex-col items-start sm:col-span-2 lg:col-span-3">
+            <div className="w-full rounded-2xl bg-zinc-900 p-5 text-white mb-8">
+              <p className="text-base font-semibold">Moving soon?</p>
+              <p className="mt-1 text-sm text-zinc-300">
+                Compare quotes from trusted movers — it&apos;s free.
+              </p>
+              <Link
+                href="/get-prices"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100"
+              >
+                Get free quotes
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="mailto:support@movingeasy.co.nz"
+                className="mt-4 flex items-center gap-2 text-sm text-zinc-300 transition-colors hover:text-white"
+              >
+                <Mail className="h-4 w-4" />
+                support@movingeasy.co.nz
+              </a>
+            </div>
+
             <h4 className="text-sm font-semibold uppercase tracking-wider text-black mb-5">
               Legal
             </h4>

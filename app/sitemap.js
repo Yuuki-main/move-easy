@@ -5,6 +5,7 @@ const STATIC_PAGES = [
   { path: '', priority: 1, changeFrequency: 'weekly' },
   { path: '/get-prices', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/reviews', priority: 0.6, changeFrequency: 'weekly' },
+  { path: '/for-movers', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/contact', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/privacy', priority: 0.2, changeFrequency: 'yearly' },
